@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/medicine.dart';
+import 'notification_service.dart';
 
 class StorageService extends ChangeNotifier {
   List<Medicine> _medicines = [];
@@ -20,7 +21,7 @@ class StorageService extends ChangeNotifier {
     return File('${dir.path}/medicines.json');
   }
 
-  /// 从 JSON 文件加载药品列表
+  /// 从 JSON 文件加载药品列表，并自动扣减库存
   Future<void> load() async {
     try {
       final file = await _getFile();
@@ -29,12 +30,44 @@ class StorageService extends ChangeNotifier {
         final List<dynamic> jsonList = jsonDecode(content);
         _medicines =
             jsonList.map((e) => Medicine.fromJson(e as Map<String, dynamic>)).toList();
+        _autoDeductStock();
       }
     } catch (e) {
       debugPrint('加载数据失败: $e');
     }
     _initialized = true;
     notifyListeners();
+  }
+
+  /// 根据服用周期自动扣减库存，并持久化
+  void _autoDeductStock() {
+    bool changed = false;
+    final now = DateTime.now();
+    for (int i = 0; i < _medicines.length; i++) {
+      final m = _medicines[i];
+      final adjusted = m.adjustedStock;
+      if (adjusted < m.currentStock) {
+        _medicines[i] = m.copyWith(
+          currentStock: adjusted,
+          lastStockUpdate: now,
+          updatedAt: now,
+        );
+        changed = true;
+      }
+    }
+    if (changed) {
+      _save();
+    }
+    // 为所有药品预约定时通知
+    _scheduleAlerts();
+  }
+
+  /// 为所有药品预约定时通知
+  void _scheduleAlerts() {
+    final notifier = NotificationService();
+    for (final medicine in _medicines) {
+      notifier.scheduleStockAlert(medicine);
+    }
   }
 
   /// 保存药品列表到 JSON 文件
@@ -53,6 +86,7 @@ class StorageService extends ChangeNotifier {
     _medicines.add(medicine);
     await _save();
     notifyListeners();
+    NotificationService().scheduleStockAlert(medicine);
   }
 
   /// 更新药品
@@ -62,6 +96,7 @@ class StorageService extends ChangeNotifier {
       _medicines[index] = medicine;
       await _save();
       notifyListeners();
+      NotificationService().scheduleStockAlert(medicine);
     }
   }
 
@@ -70,6 +105,7 @@ class StorageService extends ChangeNotifier {
     _medicines.removeWhere((m) => m.id == id);
     await _save();
     notifyListeners();
+    NotificationService().cancelForMedicine(id);
   }
 
   /// 根据 ID 查找药品

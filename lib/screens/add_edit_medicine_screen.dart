@@ -68,7 +68,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       _periodUnit = medicine.periodUnit;
       _timesPerPeriodController.text = medicine.timesPerPeriod.toString();
       _dosagePerTimeController.text = medicine.dosagePerTime.toString();
-      _stockController.text = medicine.currentStock.toString();
+      _stockController.text = medicine.currentStock.toStringAsFixed(1);
       _thresholdController.text = medicine.alertThreshold.toString();
     }
   }
@@ -100,6 +100,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
     if (widget.isEditing) {
       final existing = storage.findById(widget.medicineId!)!;
+      final stockChanged = stock != existing.currentStock;
       final updated = existing.copyWith(
         name: _nameController.text.trim(),
         dosageStrength: strength,
@@ -111,6 +112,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         dosagePerTime: dosage,
         currentStock: stock,
         alertThreshold: threshold,
+        lastStockUpdate: stockChanged ? now : existing.lastStockUpdate,
         updatedAt: now,
       );
       await storage.update(updated);
@@ -127,6 +129,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         dosagePerTime: dosage,
         currentStock: stock,
         alertThreshold: threshold,
+        lastStockUpdate: now,
         createdAt: now,
         updatedAt: now,
       );

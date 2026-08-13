@@ -95,6 +95,7 @@ class MedicineCard extends StatelessWidget {
                       if (medicine.currentStock > 0) {
                         final updated = medicine.copyWith(
                           currentStock: medicine.currentStock - 1,
+                          lastStockUpdate: DateTime.now(),
                           updatedAt: DateTime.now(),
                         );
                         storage.update(updated);
@@ -103,7 +104,7 @@ class MedicineCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${medicine.currentStock}',
+                    '${medicine.adjustedStock.toStringAsFixed(1)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -114,6 +115,7 @@ class MedicineCard extends StatelessWidget {
                     onTap: () {
                       final updated = medicine.copyWith(
                         currentStock: medicine.currentStock + 1,
+                        lastStockUpdate: DateTime.now(),
                         updatedAt: DateTime.now(),
                       );
                       storage.update(updated);

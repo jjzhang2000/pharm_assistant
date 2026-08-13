@@ -1,4 +1,6 @@
 class Medicine {
+  static const _sentinel = Object();
+
   final String id;
   final String name;
   final double dosageStrength;
@@ -12,6 +14,7 @@ class Medicine {
   final double alertThreshold;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? lastStockUpdate;
   final String? notes;
 
   Medicine({
@@ -28,6 +31,7 @@ class Medicine {
     required this.alertThreshold,
     required this.createdAt,
     required this.updatedAt,
+    this.lastStockUpdate,
     this.notes,
   });
 
@@ -51,12 +55,30 @@ class Medicine {
     return days > 0 ? dosagePerTime * timesPerPeriod / days : 0;
   }
 
-  /// 剩余天数
+  /// 根据时间自动扣减后的库存（以午夜为界，仅当累计消耗达到一次服用量时才扣减）
+  double get adjustedStock {
+    if (dailyConsumption <= 0) return currentStock;
+    final refTime = lastStockUpdate ?? updatedAt;
+    // 下次计数的起始午夜（上次扣减已覆盖到 refTime 当天，从下一天午夜开始算）
+    final refDay = DateTime(refTime.year, refTime.month, refTime.day + 1);
+    // 今天的下一个午夜
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    // 整日数
+    final elapsedDays = nextMidnight.difference(refDay).inDays;
+    if (elapsedDays <= 0) return currentStock;
+    final deducted = dailyConsumption * elapsedDays;
+    // 累计消耗未达到一次服用量，不扣减
+    if (deducted < dosagePerTime) return currentStock;
+    return (currentStock - deducted).clamp(0, double.infinity);
+  }
+
+  /// 剩余天数（基于自动扣减后的库存）
   double get remainingDays =>
-      dailyConsumption > 0 ? currentStock / dailyConsumption : double.infinity;
+      dailyConsumption > 0 ? adjustedStock / dailyConsumption : double.infinity;
 
   /// 是否需要提醒（库存低于阈值）
-  bool get needsAlert => currentStock < alertThreshold;
+  bool get needsAlert => adjustedStock < alertThreshold;
 
   factory Medicine.fromJson(Map<String, dynamic> json) {
     return Medicine(
@@ -75,6 +97,9 @@ class Medicine {
           0,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      lastStockUpdate: json['lastStockUpdate'] != null
+          ? DateTime.parse(json['lastStockUpdate'] as String)
+          : null,
       notes: json['notes'] as String?,
     );
   }
@@ -94,7 +119,9 @@ class Medicine {
       'alertThreshold': alertThreshold,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'notes': notes,
+      if (lastStockUpdate != null)
+        'lastStockUpdate': lastStockUpdate!.toIso8601String(),
+      if (notes != null) 'notes': notes,
     };
   }
 
@@ -112,6 +139,7 @@ class Medicine {
     double? alertThreshold,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Object? lastStockUpdate = _sentinel,
     String? notes,
   }) {
     return Medicine(
@@ -128,6 +156,9 @@ class Medicine {
       alertThreshold: alertThreshold ?? this.alertThreshold,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lastStockUpdate: lastStockUpdate == _sentinel
+          ? this.lastStockUpdate
+          : lastStockUpdate as DateTime?,
       notes: notes ?? this.notes,
     );
   }
