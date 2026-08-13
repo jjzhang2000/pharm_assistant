@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 胶囊形状 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,34 h16 c8,0 8,20 0,20 h-16 c-8,0 -8,-20 0,-20 z"/>
+</vector>

@@ -1,0 +1,44 @@
+# Flutter
+.dart_tool/
+.packages
+build/
+*.iml
+.idea/
+.vscode/
+
+# Flutter - pubspec.lock 应提交（锁定依赖版本），不忽略
+# *.lock 已移除，仅忽略特定 lock 文件
+.gradle/
+
+# Android
+android/.gradle/
+android/app/build/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+
+# macOS
+macos/Pods/
+
+# Generated
+*.g.dart
+*.freezed.dart
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+
+# Flutter crash logs
+flutter_*.log
