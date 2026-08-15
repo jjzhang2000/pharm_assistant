@@ -20,6 +20,9 @@ void main() async {
     debugPrint('通知初始化失败: $e');
   }
 
+  // 通知初始化完成后，为所有药品预约定时通知
+  storageService.scheduleAllAlerts();
+
   runApp(
     ChangeNotifierProvider.value(
       value: storageService,

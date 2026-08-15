@@ -30,7 +30,7 @@ class StorageService extends ChangeNotifier {
         final List<dynamic> jsonList = jsonDecode(content);
         _medicines =
             jsonList.map((e) => Medicine.fromJson(e as Map<String, dynamic>)).toList();
-        _autoDeductStock();
+        await _autoDeductStock();
       }
     } catch (e) {
       debugPrint('加载数据失败: $e');
@@ -40,30 +40,33 @@ class StorageService extends ChangeNotifier {
   }
 
   /// 根据服用周期自动扣减库存，并持久化
-  void _autoDeductStock() {
+  Future<void> _autoDeductStock() async {
     bool changed = false;
     final now = DateTime.now();
     for (int i = 0; i < _medicines.length; i++) {
       final m = _medicines[i];
       final adjusted = m.adjustedStock;
       if (adjusted < m.currentStock) {
+        debugPrint(
+            '[自动扣减] ${m.name}: ${m.currentStock} -> $adjusted (lastStockUpdate=${m.lastStockUpdate})');
         _medicines[i] = m.copyWith(
           currentStock: adjusted,
           lastStockUpdate: now,
           updatedAt: now,
         );
         changed = true;
+      } else {
+        debugPrint(
+            '[自动扣减] ${m.name}: 无需扣减 (stock=${m.currentStock}, adjusted=$adjusted, lastStockUpdate=${m.lastStockUpdate})');
       }
     }
     if (changed) {
-      _save();
+      await _save();
     }
-    // 为所有药品预约定时通知
-    _scheduleAlerts();
   }
 
-  /// 为所有药品预约定时通知
-  void _scheduleAlerts() {
+  /// 为所有药品预约定时通知（需在 NotificationService.init() 之后调用）
+  void scheduleAllAlerts() {
     final notifier = NotificationService();
     for (final medicine in _medicines) {
       notifier.scheduleStockAlert(medicine);

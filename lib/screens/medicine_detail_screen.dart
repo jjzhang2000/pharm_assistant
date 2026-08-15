@@ -155,7 +155,7 @@ class MedicineDetailScreen extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.shelves,
                   label: '当前存量',
-                  value: '${medicine.adjustedStock.toStringAsFixed(1)} ${medicine.form}',
+                  value: '${medicine.currentStock} ${medicine.form}',
                 ),
                 _InfoRow(
                   icon: Icons.notifications_active_outlined,
@@ -171,13 +171,11 @@ class MedicineDetailScreen extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      flex: 2,
                       child: OutlinedButton(
                         onPressed: () {
                           if (medicine.currentStock > 0) {
                             final updated = medicine.copyWith(
                               currentStock: medicine.currentStock - 1,
-                              lastStockUpdate: DateTime.now(),
                               updatedAt: DateTime.now(),
                             );
                             storage.update(updated);
@@ -191,42 +189,18 @@ class MedicineDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      flex: 3,
-                      child: FilledButton.tonal(
+                      child: FilledButton(
                         onPressed: () {
                           final updated = medicine.copyWith(
                             currentStock: medicine.currentStock + 1,
-                            lastStockUpdate: DateTime.now(),
                             updatedAt: DateTime.now(),
                           );
                           storage.update(updated);
                         },
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          foregroundColor: theme.colorScheme.onPrimaryContainer,
                         ),
                         child: const Icon(Icons.add),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 3,
-                      child: FilledButton.tonal(
-                        onPressed: () {
-                          final updated = medicine.copyWith(
-                            currentStock: medicine.currentStock + 7,
-                            lastStockUpdate: DateTime.now(),
-                            updatedAt: DateTime.now(),
-                          );
-                          storage.update(updated);
-                        },
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          foregroundColor: theme.colorScheme.onPrimaryContainer,
-                        ),
-                        child: const Text('+7'),
                       ),
                     ),
                   ],

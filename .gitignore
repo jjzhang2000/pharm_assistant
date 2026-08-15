@@ -42,3 +42,9 @@ coverage/
 
 # Flutter crash logs
 flutter_*.log
+
+# Build debug logs
+build_log.txt
+
+# Kotlin build cache
+android/.kotlin/

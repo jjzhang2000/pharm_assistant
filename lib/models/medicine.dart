@@ -68,8 +68,8 @@ class Medicine {
     final elapsedDays = nextMidnight.difference(refDay).inDays;
     if (elapsedDays <= 0) return currentStock;
     final deducted = dailyConsumption * elapsedDays;
-    // 累计消耗未达到一次服用量，不扣减
-    if (deducted < dosagePerTime) return currentStock;
+    // 累计消耗未达到一次服用量，不扣减（使用 epsilon 避免浮点精度问题）
+    if (deducted < dosagePerTime - 1e-9) return currentStock;
     return (currentStock - deducted).clamp(0, double.infinity);
   }
 
