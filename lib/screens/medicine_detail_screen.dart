@@ -171,6 +171,7 @@ class MedicineDetailScreen extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
+                      flex: 2,
                       child: OutlinedButton(
                         onPressed: () {
                           if (medicine.currentStock > 0) {
@@ -189,6 +190,7 @@ class MedicineDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
+                      flex: 3,
                       child: FilledButton(
                         onPressed: () {
                           final updated = medicine.copyWith(
@@ -199,8 +201,29 @@ class MedicineDetailScreen extends StatelessWidget {
                         },
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          foregroundColor: theme.colorScheme.onPrimaryContainer,
                         ),
                         child: const Icon(Icons.add),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 3,
+                      child: FilledButton(
+                        onPressed: () {
+                          final updated = medicine.copyWith(
+                            currentStock: medicine.currentStock + 7,
+                            updatedAt: DateTime.now(),
+                          );
+                          storage.update(updated);
+                        },
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          foregroundColor: theme.colorScheme.onPrimaryContainer,
+                        ),
+                        child: const Text('+7'),
                       ),
                     ),
                   ],
