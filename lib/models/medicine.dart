@@ -15,6 +15,8 @@ class Medicine {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? lastStockUpdate;
+  /// 低频药品（频次低于每天1次）的下一次服用日期
+  final DateTime? nextDoseDate;
   final String? notes;
 
   Medicine({
@@ -32,6 +34,7 @@ class Medicine {
     required this.createdAt,
     required this.updatedAt,
     this.lastStockUpdate,
+    this.nextDoseDate,
     this.notes,
   });
 
@@ -55,14 +58,45 @@ class Medicine {
     return days > 0 ? dosagePerTime * timesPerPeriod / days : 0;
   }
 
+  /// 是否为低频药品（服用频次低于每天 1 次，如每 2 天 1 次、每周 1 次）
+  bool get isInfrequent =>
+      timesPerPeriod < periodToDays(periodUnit, periodValue);
+
+  /// 两次服用之间的间隔天数（如每 2 天 1 次 → 2，每周 1 次 → 7）
+  int get doseIntervalDays {
+    final days = periodToDays(periodUnit, periodValue);
+    final interval = days ~/ timesPerPeriod;
+    return interval < 1 ? 1 : interval;
+  }
+
+  /// 服用一次后，下一次服用日期
+  DateTime nextDoseDateAfterDose(DateTime doseDate) {
+    return DateTime(
+        doseDate.year, doseDate.month, doseDate.day + doseIntervalDays);
+  }
+
   /// 根据时间自动扣减后的库存（以午夜为界，仅当累计消耗达到一次服用量时才扣减）
   double get adjustedStock {
     if (dailyConsumption <= 0) return currentStock;
+    final now = DateTime.now();
+
+    // 低频药品：根据下次服用日期计算已过期的服用次数
+    if (isInfrequent && nextDoseDate != null) {
+      final doseDay = DateTime(
+          nextDoseDate!.year, nextDoseDate!.month, nextDoseDate!.day);
+      final today = DateTime(now.year, now.month, now.day);
+      if (doseDay.isAfter(today)) return currentStock;
+      // 已过期的完整服用次数（含今天）
+      final dosesDue =
+          today.difference(doseDay).inDays ~/ doseIntervalDays + 1;
+      final deducted = dosesDue * dosagePerTime;
+      return (currentStock - deducted).clamp(0, double.infinity);
+    }
+
     final refTime = lastStockUpdate ?? updatedAt;
     // 下次计数的起始午夜（上次扣减已覆盖到 refTime 当天，从下一天午夜开始算）
     final refDay = DateTime(refTime.year, refTime.month, refTime.day + 1);
     // 今天的下一个午夜
-    final now = DateTime.now();
     final nextMidnight = DateTime(now.year, now.month, now.day + 1);
     // 整日数
     final elapsedDays = nextMidnight.difference(refDay).inDays;
@@ -73,12 +107,27 @@ class Medicine {
     return (currentStock - deducted).clamp(0, double.infinity);
   }
 
+  /// 自动扣减后，低频药品的下一次服用日期
+  DateTime? get adjustedNextDoseDate {
+    if (!isInfrequent || nextDoseDate == null) return nextDoseDate;
+    final now = DateTime.now();
+    final doseDay =
+        DateTime(nextDoseDate!.year, nextDoseDate!.month, nextDoseDate!.day);
+    final today = DateTime(now.year, now.month, now.day);
+    if (doseDay.isAfter(today)) return nextDoseDate;
+    final dosesDue = today.difference(doseDay).inDays ~/ doseIntervalDays + 1;
+    // 最后一次到期服用日 + 一个间隔 = 下次服用日
+    final lastDueDay =
+        doseDay.add(Duration(days: (dosesDue - 1) * doseIntervalDays));
+    return nextDoseDateAfterDose(lastDueDay);
+  }
+
   /// 剩余天数（基于自动扣减后的库存）
   double get remainingDays =>
       dailyConsumption > 0 ? adjustedStock / dailyConsumption : double.infinity;
 
-  /// 是否需要提醒（库存低于阈值）
-  bool get needsAlert => adjustedStock < alertThreshold;
+  /// 是否需要提醒（剩余天数低于阈值天数）
+  bool get needsAlert => remainingDays < alertThreshold;
 
   factory Medicine.fromJson(Map<String, dynamic> json) {
     return Medicine(
@@ -99,6 +148,9 @@ class Medicine {
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       lastStockUpdate: json['lastStockUpdate'] != null
           ? DateTime.parse(json['lastStockUpdate'] as String)
+          : null,
+      nextDoseDate: json['nextDoseDate'] != null
+          ? DateTime.parse(json['nextDoseDate'] as String)
           : null,
       notes: json['notes'] as String?,
     );
@@ -121,6 +173,8 @@ class Medicine {
       'updatedAt': updatedAt.toIso8601String(),
       if (lastStockUpdate != null)
         'lastStockUpdate': lastStockUpdate!.toIso8601String(),
+      if (nextDoseDate != null)
+        'nextDoseDate': nextDoseDate!.toIso8601String(),
       if (notes != null) 'notes': notes,
     };
   }
@@ -140,6 +194,7 @@ class Medicine {
     DateTime? createdAt,
     DateTime? updatedAt,
     Object? lastStockUpdate = _sentinel,
+    Object? nextDoseDate = _sentinel,
     String? notes,
   }) {
     return Medicine(
@@ -159,6 +214,9 @@ class Medicine {
       lastStockUpdate: lastStockUpdate == _sentinel
           ? this.lastStockUpdate
           : lastStockUpdate as DateTime?,
+      nextDoseDate: nextDoseDate == _sentinel
+          ? this.nextDoseDate
+          : nextDoseDate as DateTime?,
       notes: notes ?? this.notes,
     );
   }

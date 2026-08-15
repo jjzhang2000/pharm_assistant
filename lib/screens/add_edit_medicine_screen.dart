@@ -29,6 +29,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   late String _form;
   late String _periodUnit;
 
+  /// 低频药品的下次服用日期
+  DateTime? _nextDoseDate;
+
   final List<String> _strengthUnits = ['mg', 'g', 'ml', 'IU', 'mcg'];
   final List<String> _forms = ['片', '粒', '胶囊', '包', '瓶', '支', '滴'];
   final List<String> _periodUnits = ['天', '周', '月'];
@@ -70,7 +73,32 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       _dosagePerTimeController.text = medicine.dosagePerTime.toString();
       _stockController.text = medicine.currentStock.toString();
       _thresholdController.text = medicine.alertThreshold.toString();
+      _nextDoseDate = medicine.nextDoseDate;
     }
+  }
+
+  /// 当前表单填写的频次是否为低频（低于每天 1 次）
+  bool get _isInfrequent {
+    final periodVal = int.tryParse(_periodValueController.text) ?? 1;
+    final times = int.tryParse(_timesPerPeriodController.text) ?? 1;
+    return times < Medicine.periodToDays(_periodUnit, periodVal);
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '请选择';
+    return '${date.year}/${date.month}/${date.day}';
+  }
+
+  Future<void> _pickNextDoseDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _nextDoseDate ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked == null) return;
+    setState(() => _nextDoseDate = picked);
   }
 
   @override
@@ -98,6 +126,12 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     final stock = double.tryParse(_stockController.text) ?? 0;
     final threshold = double.tryParse(_thresholdController.text) ?? 7;
 
+    // 低频药品需要记录下次服用日期；未选择则默认明天
+    final infrequent = times < Medicine.periodToDays(_periodUnit, periodVal);
+    final nextDoseDate = infrequent
+        ? (_nextDoseDate ?? DateTime(now.year, now.month, now.day + 1))
+        : null;
+
     if (widget.isEditing) {
       final existing = storage.findById(widget.medicineId!)!;
       final updated = existing.copyWith(
@@ -111,6 +145,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         dosagePerTime: dosage,
         currentStock: stock,
         alertThreshold: threshold,
+        nextDoseDate: nextDoseDate,
         updatedAt: now,
       );
       await storage.update(updated);
@@ -127,6 +162,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         dosagePerTime: dosage,
         currentStock: stock,
         alertThreshold: threshold,
+        nextDoseDate: nextDoseDate,
         createdAt: now,
         updatedAt: now,
       );
@@ -136,13 +172,26 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     if (mounted) Navigator.pop(context, true);
   }
 
+  /// 统一的输入框装饰，保证所有输入框/选择框高度一致
+  InputDecoration _decoration({String? hintText, bool compact = false}) {
+    return InputDecoration(
+      hintText: hintText,
+      isDense: true,
+      border: const OutlineInputBorder(),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 4 : 12,
+        vertical: 12,
+      ),
+    );
+  }
+
   Widget _buildDropdown({
     required String value,
     required List<String> items,
-    required ValueChanged<String> onChanged,
+    required ValueChanged<String?> onChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).colorScheme.outline),
         borderRadius: BorderRadius.circular(4),
@@ -152,11 +201,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           value: value,
           isDense: true,
           items: items
-              .map((i) => DropdownMenuItem(value: i, child: Text(i)))
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
+          onChanged: onChanged,
         ),
       ),
     );
@@ -166,7 +213,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     return _buildDropdown(
       value: _form,
       items: _forms,
-      onChanged: (v) => setState(() => _form = v),
+      onChanged: (v) {
+        if (v != null) setState(() => _form = v);
+      },
     );
   }
 
@@ -203,10 +252,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _nameController,
-                              decoration: const InputDecoration(
-                                hintText: '药品名称',
-                                border: OutlineInputBorder(),
-                              ),
+                              decoration: _decoration(hintText: '药品名称'),
                               validator: (v) => (v == null || v.trim().isEmpty)
                                   ? '请输入药品名称'
                                   : null,
@@ -225,18 +271,16 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               controller: _dosageStrengthController,
                               keyboardType: const TextInputType.numberWithOptions(
                                   decimal: true),
-                              decoration: const InputDecoration(
-                                hintText: '剂量',
-                                border: OutlineInputBorder(),
-                              ),
+                              decoration: _decoration(hintText: '剂量'),
                             ),
                           ),
                           const SizedBox(width: 8),
                           _buildDropdown(
                             value: _dosageStrengthUnit,
                             items: _strengthUnits,
-                            onChanged: (v) =>
-                                setState(() => _dosageStrengthUnit = v),
+                            onChanged: (v) {
+                              if (v != null) setState(() => _dosageStrengthUnit = v);
+                            },
                           ),
                           const SizedBox(width: 8),
                           const Text('/'),
@@ -272,11 +316,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               controller: _periodValueController,
                               keyboardType: TextInputType.number,
                               textAlign: TextAlign.center,
-                              decoration: const InputDecoration(
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 10),
-                              ),
+                              decoration: _decoration(compact: true),
+                              onChanged: (_) => setState(() {}),
                               validator: (v) {
                                 final n = int.tryParse(v ?? '');
                                 if (n == null || n <= 0) return ' ';
@@ -288,8 +329,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           _buildDropdown(
                             value: _periodUnit,
                             items: _periodUnits,
-                            onChanged: (v) =>
-                                setState(() => _periodUnit = v),
+                            onChanged: (v) {
+                              if (v != null) setState(() => _periodUnit = v);
+                            },
                           ),
                           const SizedBox(width: 8),
                           SizedBox(
@@ -298,11 +340,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               controller: _timesPerPeriodController,
                               keyboardType: TextInputType.number,
                               textAlign: TextAlign.center,
-                              decoration: const InputDecoration(
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 10),
-                              ),
+                              decoration: _decoration(compact: true),
+                              onChanged: (_) => setState(() {}),
                               validator: (v) {
                                 final n = int.tryParse(v ?? '');
                                 if (n == null || n <= 0) return ' ';
@@ -314,6 +353,45 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           const Text('次'),
                         ],
                       ),
+                      // 低频药品：下次服用日期输入行
+                      if (_isInfrequent) ...[
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: _pickNextDoseDate,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.event, size: 20),
+                              const SizedBox(width: 8),
+                              const Text('下次服用'),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outline),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(_formatDate(_nextDoseDate)),
+                                      const Spacer(),
+                                      Icon(Icons.arrow_drop_down,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.6)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -326,10 +404,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               controller: _dosagePerTimeController,
                               keyboardType: const TextInputType.numberWithOptions(
                                   decimal: true),
-                              decoration: const InputDecoration(
-                                hintText: '剂量',
-                                border: OutlineInputBorder(),
-                              ),
+                              decoration: _decoration(hintText: '剂量'),
                               validator: (v) {
                                 final n = double.tryParse(v ?? '');
                                 if (n == null || n <= 0) return ' ';
@@ -368,10 +443,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               controller: _stockController,
                               keyboardType: const TextInputType.numberWithOptions(
                                   decimal: true),
-                              decoration: const InputDecoration(
-                                hintText: '数量',
-                                border: OutlineInputBorder(),
-                              ),
+                              decoration: _decoration(hintText: '数量'),
                               validator: (v) {
                                 final n = double.tryParse(v ?? '');
                                 if (n == null || n < 0) return ' ';
@@ -395,10 +467,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               controller: _thresholdController,
                               keyboardType: const TextInputType.numberWithOptions(
                                   decimal: true),
-                              decoration: const InputDecoration(
-                                hintText: '数量',
-                                border: OutlineInputBorder(),
-                              ),
+                              decoration: _decoration(hintText: '数量'),
                               validator: (v) {
                                 final n = double.tryParse(v ?? '');
                                 if (n == null || n <= 0) return ' ';
@@ -407,9 +476,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          _formDropdown(),
-                          const SizedBox(width: 8),
-                          const Text('提醒'),
+                          const Text('天提醒'),
                         ],
                       ),
                     ],

@@ -52,6 +52,8 @@ class StorageService extends ChangeNotifier {
         _medicines[i] = m.copyWith(
           currentStock: adjusted,
           lastStockUpdate: now,
+          // 低频药品：扣减后推进下一次服用日期
+          nextDoseDate: m.adjustedNextDoseDate,
           updatedAt: now,
         );
         changed = true;

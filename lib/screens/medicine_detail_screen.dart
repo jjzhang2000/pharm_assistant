@@ -141,11 +141,14 @@ class MedicineDetailScreen extends StatelessWidget {
                   label: '每次剂量',
                   value: '${medicine.dosagePerTime} ${medicine.form}',
                 ),
-                _InfoRow(
-                  icon: Icons.calculate_outlined,
-                  label: '每日消耗',
-                  value: '${medicine.dailyConsumption.toStringAsFixed(1)} ${medicine.form}',
-                ),
+                if (medicine.isInfrequent)
+                  _InfoRow(
+                    icon: Icons.event,
+                    label: '下次服用日期',
+                    value: medicine.nextDoseDate != null
+                        ? '${medicine.nextDoseDate!.year}/${medicine.nextDoseDate!.month}/${medicine.nextDoseDate!.day}'
+                        : '未设置',
+                  ),
 
                 const SizedBox(height: 24),
 
@@ -160,7 +163,7 @@ class MedicineDetailScreen extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.notifications_active_outlined,
                   label: '提醒阈值',
-                  value: '低于 ${medicine.alertThreshold} ${medicine.form} 提醒',
+                  value: '低于 ${medicine.alertThreshold} 天提醒',
                 ),
 
                 const SizedBox(height: 24),

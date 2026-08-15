@@ -48,3 +48,9 @@ build_log.txt
 
 # Kotlin build cache
 android/.kotlin/
+
+# Pub cache (local)
+.pub_cache/
+
+# Windows ephemeral backup
+windows/flutter/ephemeral_bak/
