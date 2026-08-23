@@ -52,11 +52,18 @@ class _HomeScreenState extends State<HomeScreen> {
             return const EmptyState();
           }
 
+          // 剩余时间不足的药品优先显示；同组内均按剩余时间递增排序
+          final medicines = [...storage.medicines]
+            ..sort((a, b) {
+              if (a.needsAlert != b.needsAlert) return a.needsAlert ? -1 : 1;
+              return a.remainingDays.compareTo(b.remainingDays);
+            });
+
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: storage.medicines.length,
+            itemCount: medicines.length,
             itemBuilder: (context, index) {
-              final medicine = storage.medicines[index];
+              final medicine = medicines[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: MedicineCard(medicine: medicine),
