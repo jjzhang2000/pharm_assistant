@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/medicine.dart';
+import '../services/medicine_lookup_service.dart';
 import '../services/storage_service.dart';
+import 'scan_screen.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final String? medicineId;
@@ -37,6 +39,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
   /// 周/月安排中各服用日的小时数（0-23）
   int? _doseHour;
+
+  /// 是否正在联网查询药品信息
+  bool _isLookingUp = false;
 
   final List<String> _strengthUnits = ['mg', 'g', 'ml', 'IU', 'mcg'];
   final List<String> _forms = ['片', '粒', '胶囊', '包', '瓶', '支', '滴'];
@@ -134,6 +139,135 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       // 周/月安排缺省服用小时设为 08:00
       _doseHour ??= 8;
     }
+  }
+
+  /// 扫描药盒条码/二维码，识别结果填入名称框并尝试联网查询
+  Future<void> _scanMedicine() async {
+    final scanned = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const ScanScreen()),
+    );
+    if (scanned == null || !mounted) return;
+    final text = scanned.trim();
+    if (text.isEmpty) return;
+
+    // 纯数字：商品条码/追溯码，先按条码查名称
+    if (RegExp(r'^[0-9]{6,}$').hasMatch(text)) {
+      // 20 位药品追溯码：官方查询接口不开放，直接提示手动输入
+      if (text.length == 20) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('这是药品追溯码，暂无法查询，请手动输入药品名称')),
+        );
+        return;
+      }
+      setState(() => _isLookingUp = true);
+      BarcodeInfo? info;
+      try {
+        info = await MedicineLookupService().lookupByBarcode(text);
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isLookingUp = false);
+        final msg = e.toString();
+        final hint = msg.contains('未申请') || msg.contains('160')
+            ? '请先在天行数据控制台申请「商品条码查询」接口'
+            : '条码查询失败：$msg';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(hint)));
+        return;
+      }
+      if (!mounted) return;
+      if (info == null) {
+        setState(() => _isLookingUp = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('未查到该条码「$text」对应的药品，请手动输入名称')),
+        );
+        return;
+      }
+      // 先填名称与条码规格（剂量/剂型），再查说明书补全周期/每次剂量
+      _nameController.text = info.name;
+      if (info.dosageStrength != null) {
+        _dosageStrengthController.text = _trimNum(info.dosageStrength!);
+      }
+      if (info.dosageStrengthUnit != null &&
+          _strengthUnits.contains(info.dosageStrengthUnit)) {
+        _dosageStrengthUnit = info.dosageStrengthUnit!;
+      }
+      if (info.form != null && _forms.contains(info.form)) {
+        _form = info.form!;
+      }
+      setState(() => _isLookingUp = false);
+      await _lookupMedicine();
+      return;
+    }
+
+    // 含文字：当作药品名称直接查说明书
+    _nameController.text = text;
+    await _lookupMedicine();
+  }
+
+  /// 联网查询药品规范信息并填入表单
+  Future<void> _lookupMedicine() async {
+    final keyword = _nameController.text.trim();
+    if (keyword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先输入药品名称')),
+      );
+      return;
+    }
+    setState(() => _isLookingUp = true);
+    try {
+      final result = await MedicineLookupService().lookup(keyword);
+      if (!mounted) return;
+      setState(() => _applyLookupResult(result));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已填入「${result.name}」的信息，请核对服用剂量与周期')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString();
+      final hint = msg.contains('未查询到') || msg.contains('数据返回为空')
+          ? '已填入名称，但未查到该药品的说明书，剂量/周期请手动填写'
+          : '查询失败：$msg';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(hint)));
+    } finally {
+      if (mounted) setState(() => _isLookingUp = false);
+    }
+  }
+
+  /// 将查询结果写入对应输入项
+  void _applyLookupResult(DrugLookupResult r) {
+    _nameController.text = r.name;
+    if (r.dosageStrength != null) {
+      _dosageStrengthController.text = _trimNum(r.dosageStrength!);
+    }
+    if (r.dosageStrengthUnit != null &&
+        _strengthUnits.contains(r.dosageStrengthUnit)) {
+      _dosageStrengthUnit = r.dosageStrengthUnit!;
+    }
+    if (r.form != null && _forms.contains(r.form)) {
+      _form = r.form!;
+    }
+    if (r.periodUnit != null && _periodUnits.contains(r.periodUnit)) {
+      if (r.periodUnit != _periodUnit) {
+        _periodUnit = r.periodUnit!;
+        _doseSlots = [];
+        _nextRoundDates = [];
+        _doseHour = null;
+      }
+    }
+    if (r.periodValue != null && r.periodValue! > 0) {
+      _periodValueController.text = r.periodValue.toString();
+    }
+    if (r.timesPerPeriod != null && r.timesPerPeriod! > 0) {
+      _timesPerPeriodController.text = r.timesPerPeriod.toString();
+    }
+    if (r.dosagePerTime != null && r.dosagePerTime! > 0) {
+      _dosagePerTimeController.text = _trimNum(r.dosagePerTime!);
+    }
+    _syncSlotsToCount();
+  }
+
+  String _trimNum(double v) {
+    if (v == v.roundToDouble()) return v.toInt().toString();
+    return v.toString();
   }
 
   @override
@@ -436,6 +570,24 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                   ? '请输入药品名称'
                                   : null,
                             ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: _isLookingUp ? null : _lookupMedicine,
+                            tooltip: '联网查询药品信息',
+                            icon: _isLookingUp
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.search),
+                          ),
+                          IconButton(
+                            onPressed: _isLookingUp ? null : _scanMedicine,
+                            tooltip: '扫描药盒条码/二维码',
+                            icon: const Icon(Icons.qr_code_scanner),
                           ),
                         ],
                       ),
