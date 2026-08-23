@@ -118,7 +118,7 @@ class MedicineDetailScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // 药品信息
-                _SectionHeader(icon: Icons.medication, label: '药品信息'),
+                const _SectionHeader(icon: Icons.medication, label: '药品信息'),
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.medication_outlined,
@@ -129,7 +129,7 @@ class MedicineDetailScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // 服用方式
-                _SectionHeader(icon: Icons.repeat, label: '服用方式'),
+                const _SectionHeader(icon: Icons.repeat, label: '服用方式'),
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.schedule,
@@ -141,19 +141,25 @@ class MedicineDetailScreen extends StatelessWidget {
                   label: '每次剂量',
                   value: '${medicine.dosagePerTime} ${medicine.form}',
                 ),
-                if (medicine.isInfrequent)
+                if (medicine.hasSchedule)
+                  _InfoRow(
+                    icon: Icons.access_time,
+                    label: '服用安排',
+                    value: _scheduleSummary(medicine),
+                  ),
+                if (medicine.isInfrequent || medicine.hasSchedule)
                   _InfoRow(
                     icon: Icons.event,
                     label: '下次服用日期',
-                    value: medicine.nextDoseDate != null
-                        ? '${medicine.nextDoseDate!.year}/${medicine.nextDoseDate!.month}/${medicine.nextDoseDate!.day}'
+                    value: medicine.adjustedNextDoseDate != null
+                        ? '${medicine.adjustedNextDoseDate!.year}/${medicine.adjustedNextDoseDate!.month}/${medicine.adjustedNextDoseDate!.day}'
                         : '未设置',
                   ),
 
                 const SizedBox(height: 24),
 
                 // 库存信息
-                _SectionHeader(icon: Icons.inventory_2, label: '库存信息'),
+                const _SectionHeader(icon: Icons.inventory_2, label: '库存信息'),
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.shelves,
@@ -169,7 +175,7 @@ class MedicineDetailScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // 库存调整
-                _SectionHeader(icon: Icons.tune, label: '快速调整库存'),
+                const _SectionHeader(icon: Icons.tune, label: '快速调整库存'),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -216,7 +222,7 @@ class MedicineDetailScreen extends StatelessWidget {
                       child: FilledButton(
                         onPressed: () {
                           final updated = medicine.copyWith(
-                            currentStock: medicine.currentStock + 7,
+                            currentStock: medicine.currentStock + 10,
                             updatedAt: DateTime.now(),
                           );
                           storage.update(updated);
@@ -226,7 +232,7 @@ class MedicineDetailScreen extends StatelessWidget {
                           backgroundColor: theme.colorScheme.primaryContainer,
                           foregroundColor: theme.colorScheme.onPrimaryContainer,
                         ),
-                        child: const Text('+7'),
+                        child: const Text('+10'),
                       ),
                     ),
                   ],
@@ -237,6 +243,23 @@ class MedicineDetailScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// 生成服用安排的显示文本，如：每天 08:00 14:00；每周 下一轮 8/18、8/20 09:00
+  String _scheduleSummary(Medicine m) {
+    final parts = <String>[];
+    if (m.periodUnit == '天') {
+      for (final s in m.doseSlots) {
+        parts.add('${s.toString().padLeft(2, '0')}:00');
+      }
+      return parts.join(' ');
+    }
+    // 周/月：显式下一轮的各次服用日期 + 服用小时
+    for (final d in m.nextRoundDates) {
+      parts.add('${d.month}/${d.day}');
+    }
+    parts.add('${(m.doseHour ?? 8).toString().padLeft(2, '0')}:00');
+    return parts.join(' ');
   }
 
   void _confirmDelete(

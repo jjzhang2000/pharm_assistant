@@ -25,7 +25,7 @@ void main() {
     });
 
     test('remainingDays should be adjustedStock / dailyConsumption', () {
-      // lastStockUpdate 是今天，refDay = 明天，elapsedDays = 0 → adjustedStock = 20
+      // lastStockUpdate 是今天，elapsedHours = 0 → adjustedStock = 20
       expect(medicine.remainingDays, closeTo(20.0 / 3.0, 0.01));
     });
 
@@ -45,7 +45,7 @@ void main() {
         currentStock: 20.0,
         lastStockUpdate: DateTime.now(),
       );
-      // refDay = 明天 00:00，nextMidnight = 明天 00:00 → 0 天
+      // lastStockUpdate 是今天，elapsedHours = 0 → adjustedStock = 20
       expect(today.adjustedStock, 20.0);
     });
 
@@ -54,8 +54,26 @@ void main() {
         currentStock: 20.0,
         lastStockUpdate: DateTime.now().subtract(const Duration(days: 1)),
       );
-      // refDay = 今天 00:00，nextMidnight = 明天 00:00 → 1 天 → 扣 3
+      // 24 小时 × (3/24) = 3 → 扣 3
       expect(yesterday.adjustedStock, 17.0);
+    });
+
+    test('adjustedStock should deduct by hour for partial day', () {
+      // 每天 3 次、每次 1 片：过去 12 小时 → 12 × (3/24) = 1.5
+      final partialDay = medicine.copyWith(
+        currentStock: 20.0,
+        lastStockUpdate: DateTime.now().subtract(const Duration(hours: 12)),
+      );
+      expect(partialDay.adjustedStock, closeTo(18.5, 0.001));
+    });
+
+    test('adjustedStock should not deduct below one dose within first hour', () {
+      // 过去不到 1 小时 → elapsedHours = 0，不扣减
+      final lessThanHour = medicine.copyWith(
+        currentStock: 20.0,
+        lastStockUpdate: DateTime.now().subtract(const Duration(minutes: 30)),
+      );
+      expect(lessThanHour.adjustedStock, 20.0);
     });
 
     test('adjustedStock should not go below 0', () {
@@ -72,7 +90,7 @@ void main() {
         lastStockUpdate: null,
         updatedAt: DateTime.now().subtract(const Duration(days: 1)),
       );
-      // refDay = 今天 00:00，nextMidnight = 明天 00:00 → 1 天 → 扣 3
+      // updatedAt 在 24 小时前 → 扣 3
       expect(noLastUpdate.adjustedStock, 17.0);
     });
 
@@ -217,10 +235,134 @@ void main() {
         expect(m.adjustedStock, 7.0);
       });
 
+      test('remainingDays should account for partially elapsed current cycle', () {
+        // 每 2 周 1 次，下次服用在 5 天后，仅剩 1 剂 → 剩余约 5 天，而非完整 14 天
+        final fiveDaysLater = DateTime.now().add(const Duration(days: 5));
+        final m = makeInfrequent(
+          nextDoseDate: fiveDaysLater,
+          currentStock: 1.0,
+          periodValue: 2,
+          periodUnit: '周',
+        );
+        expect(m.remainingDays, closeTo(5.0, 0.001));
+      });
+
+      test('remainingDays should advance past today for overdue next dose', () {
+        // 每 2 天 1 次，下次服用日期是今天，库存 10 剂 → 剩余 9 剂 × 2 天 = 18 天
+        final today = DateTime.now();
+        final m = makeInfrequent(nextDoseDate: today, currentStock: 10.0);
+        expect(m.remainingDays, closeTo(18.0, 0.001));
+      });
+
       test('toJson and fromJson should handle nextDoseDate', () {
         final m = makeInfrequent(nextDoseDate: DateTime(2026, 9, 1));
         final restored = Medicine.fromJson(m.toJson());
         expect(restored.nextDoseDate, DateTime(2026, 9, 1));
+      });
+    });
+
+    group('服用时间安排 (天 doseSlots / 周月 nextRoundDates)', () {
+      test('天：toJson and fromJson should handle doseSlots', () {
+        final daily = medicine.copyWith(doseSlots: [8, 20]);
+        final restored = Medicine.fromJson(daily.toJson());
+        expect(restored.doseSlots, [8, 20]);
+        expect(restored.nextRoundDates, isEmpty);
+      });
+
+      test('周：toJson and fromJson should handle nextRoundDates and doseHour', () {
+        final weekly = medicine.copyWith(
+          periodUnit: '周',
+          doseSlots: const <int>[],
+          nextRoundDates: [DateTime(2026, 8, 18)],
+          doseHour: 9,
+        );
+        final restored = Medicine.fromJson(weekly.toJson());
+        expect(restored.nextRoundDates, [DateTime(2026, 8, 18)]);
+        expect(restored.doseHour, 9);
+        expect(restored.doseSlots, isEmpty);
+      });
+
+      test('旧数据迁移：周/月缺 nextRoundDates 时由 doseSlots 特征补一轮默认日期', () {
+        final weekly = medicine.copyWith(
+          periodUnit: '周',
+          doseSlots: [1, 3],
+          doseHour: 9,
+        );
+        final restored = Medicine.fromJson(weekly.toJson());
+        expect(restored.nextRoundDates, isNotEmpty);
+        expect(restored.nextRoundDates.length, weekly.timesPerPeriod);
+        expect(restored.doseHour, 9);
+      });
+
+      test('天：should not deduct when lastStockUpdate is now (0 doses passed)', () {
+        final daily = medicine.copyWith(
+          doseSlots: [8, 14, 20],
+          lastStockUpdate: DateTime.now(),
+        );
+        expect(daily.adjustedStock, 20.0);
+      });
+
+      test('周：should not deduct when nothing is due after refTime', () {
+        final weekly = medicine.copyWith(
+          periodUnit: '周',
+          doseSlots: const <int>[],
+          nextRoundDates: [DateTime.now().add(const Duration(days: 3))],
+          doseHour: 0,
+          lastStockUpdate: DateTime.now(),
+        );
+        expect(weekly.adjustedStock, 20.0);
+      });
+
+      test('scheduled medicine nextScheduledDose should be in the future', () {
+        // 每天 08:00 服一次
+        final daily = medicine.copyWith(doseSlots: [8]);
+        expect(daily.scheduledNextDose!.isAfter(DateTime.now()), true);
+
+        // 周：明日 09:00 服一次
+        final weekly = medicine.copyWith(
+          periodUnit: '周',
+          doseSlots: const <int>[],
+          nextRoundDates: [DateTime.now().add(const Duration(days: 1))],
+          doseHour: 9,
+        );
+        expect(weekly.scheduledNextDose!.isAfter(DateTime.now()), true);
+      });
+
+      test('advancedRoundDates advances to next round when current fully passed', () {
+        final past = DateTime.now().subtract(const Duration(days: 30));
+        final weekly = medicine.copyWith(
+          periodUnit: '周',
+          periodValue: 1,
+          timesPerPeriod: 1,
+          doseSlots: const <int>[],
+          nextRoundDates: [past],
+          doseHour: 0,
+        );
+        final advanced = weekly.advancedRoundDates!;
+        expect(advanced.first.isAfter(DateTime.now()), true);
+      });
+
+      test('天：scheduled deduction counts doses strictly after refTime', () {
+        // 每天最多 24 次，其中只有当前时刻之后到 now 之间的才算
+        final everyHour = medicine.copyWith(
+          doseSlots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+                      15, 16, 17, 18, 19, 20, 21, 22, 23],
+          lastStockUpdate: DateTime.now(),
+        );
+        // refTime = now，任何时刻都严格晚于 now 才算，因此 0 次
+        expect(everyHour.adjustedStock, 20.0);
+      });
+
+      test('天：remainingDays 精确锚定到下次服药时间', () {
+        // 每天 1 次、库存 5 片、刚更新 → 剩余 = 距下次(0,1] 天 + 4 天，落在 (4, 5]
+        final daily = medicine.copyWith(
+          doseSlots: [8],
+          timesPerPeriod: 1,
+          currentStock: 5.0,
+          lastStockUpdate: DateTime.now(),
+        );
+        expect(daily.remainingDays, greaterThan(4.0));
+        expect(daily.remainingDays, lessThanOrEqualTo(5.0));
       });
     });
   });

@@ -54,6 +54,8 @@ class StorageService extends ChangeNotifier {
           lastStockUpdate: now,
           // 低频药品：扣减后推进下一次服用日期
           nextDoseDate: m.adjustedNextDoseDate,
+          // 周/月安排：扣减后推进到下一轮（无安排时为 null 保持不变）
+          nextRoundDates: m.advancedRoundDates,
           updatedAt: now,
         );
         changed = true;

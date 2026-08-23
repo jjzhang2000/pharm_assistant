@@ -23,7 +23,6 @@ class NotificationService {
 
     try {
       tz_data.initializeTimeZones();
-      final localTz = tz.local;
 
       const androidSettings =
           AndroidInitializationSettings('@drawable/ic_notification');

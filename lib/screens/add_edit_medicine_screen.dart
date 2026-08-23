@@ -29,8 +29,14 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   late String _form;
   late String _periodUnit;
 
-  /// 低频药品的下次服用日期
-  DateTime? _nextDoseDate;
+  /// 服用时间安排：天-小时(0-23)。周/月用 [_nextRoundDates]
+  List<int> _doseSlots = [];
+
+  /// 周/月安排：下一轮各次服用的日期
+  List<DateTime> _nextRoundDates = [];
+
+  /// 周/月安排中各服用日的小时数（0-23）
+  int? _doseHour;
 
   final List<String> _strengthUnits = ['mg', 'g', 'ml', 'IU', 'mcg'];
   final List<String> _forms = ['片', '粒', '胶囊', '包', '瓶', '支', '滴'];
@@ -50,6 +56,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     _dosageStrengthUnit = 'mg';
     _form = '片';
     _periodUnit = '天';
+
+    _syncSlotsToCount();
 
     if (widget.isEditing) {
       _loadMedicine();
@@ -73,32 +81,59 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       _dosagePerTimeController.text = medicine.dosagePerTime.toString();
       _stockController.text = medicine.currentStock.toString();
       _thresholdController.text = medicine.alertThreshold.toString();
-      _nextDoseDate = medicine.nextDoseDate;
+      if (medicine.periodUnit == '天') {
+        _doseSlots = List<int>.from(medicine.doseSlots);
+        _doseHour = null;
+      } else {
+        _nextRoundDates = List<DateTime>.from(medicine.nextRoundDates);
+        _doseHour = medicine.doseHour;
+      }
     }
+    // 保证时间安排槽位数量与服用次数一致
+    _syncSlotsToCount();
   }
 
-  /// 当前表单填写的频次是否为低频（低于每天 1 次）
-  bool get _isInfrequent {
-    final periodVal = int.tryParse(_periodValueController.text) ?? 1;
-    final times = int.tryParse(_timesPerPeriodController.text) ?? 1;
-    return times < Medicine.periodToDays(_periodUnit, periodVal);
+  /// 天安排默认服用小时（均匀分布在 08:00 附近）
+  int _defaultSlot(int index, int times) {
+    if (index == 0) return 8;
+    return (8 + (24 * index / times).round()) % 24;
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return '请选择';
-    return '${date.year}/${date.month}/${date.day}';
-  }
-
-  Future<void> _pickNextDoseDate() async {
+  /// 周/月安排：下一轮第 index 次的默认日期（在本周期内均匀分布）
+  DateTime _nextRoundDefault(int index, int times) {
     final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _nextDoseDate ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 5),
-    );
-    if (picked == null) return;
-    setState(() => _nextDoseDate = picked);
+    final today = DateTime(now.year, now.month, now.day);
+    final periodDays = Medicine.periodToDays(
+        _periodUnit, int.tryParse(_periodValueController.text) ?? 1);
+    if (times <= 1 || periodDays <= 1) {
+      return today.add(const Duration(days: 1));
+    }
+    final span = periodDays - 1;
+    final off = (1 + span * index / times).round().clamp(1, span);
+    return today.add(Duration(days: off));
+  }
+
+  /// 让时间安排的数量与服用次数一致（天→小时槽位；周/月→下一轮日期），不足补默认、超出截断
+  void _syncSlotsToCount() {
+    final times = int.tryParse(_timesPerPeriodController.text) ?? 1;
+    if (times < 1) return;
+    if (_periodUnit == '天') {
+      while (_doseSlots.length < times) {
+        _doseSlots.add(_defaultSlot(_doseSlots.length, times));
+      }
+      if (_doseSlots.length > times) {
+        _doseSlots = _doseSlots.sublist(0, times);
+      }
+    } else {
+      while (_nextRoundDates.length < times) {
+        _nextRoundDates.add(_nextRoundDefault(_nextRoundDates.length, times));
+      }
+      if (_nextRoundDates.length > times) {
+        _nextRoundDates = _nextRoundDates.sublist(0, times);
+      }
+      // 周/月安排缺省服用小时设为 08:00
+      _doseHour ??= 8;
+    }
   }
 
   @override
@@ -126,11 +161,16 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     final stock = double.tryParse(_stockController.text) ?? 0;
     final threshold = double.tryParse(_thresholdController.text) ?? 7;
 
-    // 低频药品需要记录下次服用日期；未选择则默认明天
-    final infrequent = times < Medicine.periodToDays(_periodUnit, periodVal);
-    final nextDoseDate = infrequent
-        ? (_nextDoseDate ?? DateTime(now.year, now.month, now.day + 1))
-        : null;
+    // 服用时间安排：同步到当前服用次数，优先以具体时刻/日期精确扣减
+    _syncSlotsToCount();
+    final isDaily = _periodUnit == '天';
+    final slots = isDaily ? List<int>.from(_doseSlots) : const <int>[];
+    final rounds = isDaily
+        ? const <DateTime>[]
+        : _nextRoundDates
+            .map((d) => DateTime(d.year, d.month, d.day))
+            .toList();
+    final hour = isDaily ? null : _doseHour;
 
     if (widget.isEditing) {
       final existing = storage.findById(widget.medicineId!)!;
@@ -145,7 +185,12 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         dosagePerTime: dosage,
         currentStock: stock,
         alertThreshold: threshold,
-        nextDoseDate: nextDoseDate,
+        // 有服用安排后由 schedule 驱动扣减，清空旧的“下次服用日期”
+        nextDoseDate: null,
+        doseSlots: slots,
+        doseHour: hour,
+        nextRoundDates: rounds,
+        lastStockUpdate: now,
         updatedAt: now,
       );
       await storage.update(updated);
@@ -162,7 +207,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         dosagePerTime: dosage,
         currentStock: stock,
         alertThreshold: threshold,
-        nextDoseDate: nextDoseDate,
+        doseSlots: slots,
+        doseHour: hour,
+        nextRoundDates: rounds,
         createdAt: now,
         updatedAt: now,
       );
@@ -179,8 +226,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       isDense: true,
       border: const OutlineInputBorder(),
       contentPadding: EdgeInsets.symmetric(
-        horizontal: compact ? 4 : 12,
-        vertical: 12,
+        horizontal: compact ? 4 : 8,
+        vertical: 4,
       ),
     );
   }
@@ -191,7 +238,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     required ValueChanged<String?> onChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).colorScheme.outline),
         borderRadius: BorderRadius.circular(4),
@@ -216,6 +263,138 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       onChanged: (v) {
         if (v != null) setState(() => _form = v);
       },
+    );
+  }
+
+  /// 天安排的时间槽位（值, 标签）
+  (List<int>, List<String>) get _slotOptions {
+    return (
+      List<int>.generate(24, (i) => i),
+      List<String>.generate(24, (i) => '${i.toString().padLeft(2, '0')}:00'),
+    );
+  }
+
+  /// 把小时槽位值限制在 0-23，避免旧数据越界导致 DropdownButton 抛错
+  int _clampSlot(int v) => v.clamp(0, 23);
+
+  Widget _slotPicker(int index, int value) {
+    final (values, labels) = _slotOptions;
+    final normal = _clampSlot(value);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: normal,
+          isDense: true,
+          items: [
+            for (var i = 0; i < values.length; i++)
+              DropdownMenuItem(value: values[i], child: Text(labels[i])),
+          ],
+          onChanged: (v) {
+            if (v != null) setState(() => _doseSlots[index] = v);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 周/月安排的日期选择框：点击弹出日历，显示所选日期
+  Widget _dateBox(int index, DateTime date) {
+    final theme = Theme.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(4),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: date,
+          firstDate: DateTime.now().subtract(const Duration(days: 30)),
+          lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+        );
+        if (picked != null) {
+          setState(() => _nextRoundDates[index] = picked);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outline),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.event, size: 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 4),
+            Text('${date.month}/${date.day}'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _doseTimePicker() {
+    final hour = _doseHour ?? 8;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: hour,
+          isDense: true,
+          items: [
+            for (var h = 0; h < 24; h++)
+              DropdownMenuItem(
+                  value: h,
+                  child:
+                      Text('${h.toString().padLeft(2, '0')}:00')),
+          ],
+          onChanged: (v) {
+            if (v != null) setState(() => _doseHour = v);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 第三行：服用时间。每天→n个时间框；每周/月→n个下轮日期框 + 时间选择框，统一在一行
+  Widget _buildTimeSchedule() {
+    final times = int.tryParse(_timesPerPeriodController.text) ?? 1;
+    final isDaily = _periodUnit == '天';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const Icon(Icons.access_time, size: 20),
+            Text(isDaily ? '服用时间' : '下轮'),
+            if (isDaily)
+              for (var i = 0; i < times; i++)
+                _slotPicker(i,
+                    i < _doseSlots.length ? _doseSlots[i] : _defaultSlot(i, times))
+            else ...[
+              for (var i = 0; i < times; i++)
+                _dateBox(
+                    i,
+                    i < _nextRoundDates.length
+                        ? _nextRoundDates[i]
+                        : DateTime.now()),
+              const Text('时间'),
+              _doseTimePicker(),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
@@ -303,6 +482,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
@@ -330,7 +510,16 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                             value: _periodUnit,
                             items: _periodUnits,
                             onChanged: (v) {
-                              if (v != null) setState(() => _periodUnit = v);
+                              if (v != null) {
+                                setState(() {
+                                  _periodUnit = v;
+                                  // 切换单位后重置时间安排为默认
+                                  _doseSlots = [];
+                                  _nextRoundDates = [];
+                                  _doseHour = null;
+                                  _syncSlotsToCount();
+                                });
+                              }
                             },
                           ),
                           const SizedBox(width: 8),
@@ -341,7 +530,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               keyboardType: TextInputType.number,
                               textAlign: TextAlign.center,
                               decoration: _decoration(compact: true),
-                              onChanged: (_) => setState(() {}),
+                              onChanged: (_) => setState(_syncSlotsToCount),
                               validator: (v) {
                                 final n = int.tryParse(v ?? '');
                                 if (n == null || n <= 0) return ' ';
@@ -353,45 +542,6 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           const Text('次'),
                         ],
                       ),
-                      // 低频药品：下次服用日期输入行
-                      if (_isInfrequent) ...[
-                        const SizedBox(height: 12),
-                        InkWell(
-                          onTap: _pickNextDoseDate,
-                          child: Row(
-                            children: [
-                              const Icon(Icons.event, size: 20),
-                              const SizedBox(width: 8),
-                              const Text('下次服用'),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .outline),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Text(_formatDate(_nextDoseDate)),
-                                      const Spacer(),
-                                      Icon(Icons.arrow_drop_down,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.6)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -416,6 +566,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           _formDropdown(),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      _buildTimeSchedule(),
                     ],
                   ),
                 ),
