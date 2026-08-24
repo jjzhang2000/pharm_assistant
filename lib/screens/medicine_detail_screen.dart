@@ -77,7 +77,7 @@ class MedicineDetailScreen extends StatelessWidget {
                       Text(
                         remainingDays == double.infinity
                             ? '--'
-                            : remainingDays.toStringAsFixed(1),
+                            : remainingDays.floor().toString(),
                         style: theme.textTheme.displaySmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: isAlert

@@ -58,7 +58,7 @@ class MedicineCard extends StatelessWidget {
                   Text(
                     remainingDays == double.infinity
                         ? '--'
-                        : '${remainingDays.toStringAsFixed(1)} 天',
+                        : '${remainingDays.floor()} 天',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: isAlert
                           ? theme.colorScheme.error

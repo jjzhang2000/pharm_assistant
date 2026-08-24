@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../models/medicine.dart';
@@ -587,7 +588,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           IconButton(
                             onPressed: _isLookingUp ? null : _scanMedicine,
                             tooltip: '扫描药盒条码/二维码',
-                            icon: const Icon(Icons.qr_code_scanner),
+                            icon: const Icon(Symbols.barcode_scanner),
                           ),
                         ],
                       ),
