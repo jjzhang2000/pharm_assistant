@@ -342,27 +342,35 @@ void main() {
         expect(advanced.first.isAfter(DateTime.now()), true);
       });
 
-      test('天：scheduled deduction counts doses strictly after refTime', () {
-        // 每天最多 24 次，其中只有当前时刻之后到 now 之间的才算
+      test('天：按服药时刻扣减，refTime 之后已到点的服药次数才计入', () {
+        // 每天覆盖所有小时，refTime = now，任何时刻都不严格晚于 now，因此 0 次
         final everyHour = medicine.copyWith(
           doseSlots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
                       15, 16, 17, 18, 19, 20, 21, 22, 23],
           lastStockUpdate: DateTime.now(),
         );
-        // refTime = now，任何时刻都严格晚于 now 才算，因此 0 次
         expect(everyHour.adjustedStock, 20.0);
       });
 
-      test('天：remainingDays 精确锚定到下次服药时间', () {
-        // 每天 1 次、库存 5 片、刚更新 → 剩余 = 距下次(0,1] 天 + 4 天，落在 (4, 5]
+      test('天：remainingDays 按剩余剂数 / 每日次数计算，而非锚定到下次服药时刻', () {
+        // 每天 1 次、库存 5 片、刚更新 → 剩余 5 天（5 片 ÷ 每天 1 片）
         final daily = medicine.copyWith(
           doseSlots: [8],
           timesPerPeriod: 1,
           currentStock: 5.0,
           lastStockUpdate: DateTime.now(),
         );
-        expect(daily.remainingDays, greaterThan(4.0));
-        expect(daily.remainingDays, lessThanOrEqualTo(5.0));
+        expect(daily.remainingDays, closeTo(5.0, 0.001));
+      });
+
+      test('天：18 片每天 1 次应剩余 18 天而非 17', () {
+        final daily = medicine.copyWith(
+          doseSlots: [8],
+          timesPerPeriod: 1,
+          currentStock: 18.0,
+          lastStockUpdate: DateTime.now(),
+        );
+        expect(daily.remainingDays, closeTo(18.0, 0.001));
       });
     });
   });

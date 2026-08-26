@@ -96,6 +96,7 @@ class MedicineCard extends StatelessWidget {
                         final updated = medicine.copyWith(
                           currentStock: medicine.currentStock - 1,
                           updatedAt: DateTime.now(),
+                          lastStockUpdate: DateTime.now(),
                         );
                         storage.update(updated);
                       }
@@ -115,6 +116,7 @@ class MedicineCard extends StatelessWidget {
                       final updated = medicine.copyWith(
                         currentStock: medicine.currentStock + 1,
                         updatedAt: DateTime.now(),
+                        lastStockUpdate: DateTime.now(),
                       );
                       storage.update(updated);
                     },

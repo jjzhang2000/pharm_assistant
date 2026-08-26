@@ -296,20 +296,9 @@ class Medicine {
         return days.clamp(0, double.infinity).toDouble();
       }
     }
-    // 短周期有具体服药时刻（每天固定时段）：精确锚定到下次服药时间，
-    // 剩余时间 = 距下次服药 + 剩余整剂 × 平均间隔，避免连续均摊忽略时刻。
-    if (doseSlots.isNotEmpty) {
-      final next = scheduledNextDose;
-      if (next != null) {
-        final now = DateTime.now();
-        final dosesRemaining = adjustedStock / dosagePerTime;
-        if (dosesRemaining <= 0) return 0;
-        final daysUntilNext = next.difference(now).inMinutes / (24 * 60);
-        final perDay = doseSlots.toSet().length;
-        final days = daysUntilNext + (dosesRemaining - 1) / perDay;
-        return days.clamp(0, double.infinity).toDouble();
-      }
-    }
+    // 有具体服药时刻（每天固定时段）的短周期药品：剩余天数 = 剩余库存 / 每日消耗，
+    // 与无安排时的连续均摊口径一致。不要锚定到「距下次服药的小段时间」，
+    // 否则会把那不足一天的一截从整天数里扣掉，导致整片/整剂场景少算一天。
     return adjustedStock / dailyConsumption;
   }
 

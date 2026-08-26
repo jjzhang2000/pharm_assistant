@@ -187,6 +187,7 @@ class MedicineDetailScreen extends StatelessWidget {
                             final updated = medicine.copyWith(
                               currentStock: medicine.currentStock - 1,
                               updatedAt: DateTime.now(),
+                              lastStockUpdate: DateTime.now(),
                             );
                             storage.update(updated);
                           }
@@ -205,6 +206,7 @@ class MedicineDetailScreen extends StatelessWidget {
                           final updated = medicine.copyWith(
                             currentStock: medicine.currentStock + 1,
                             updatedAt: DateTime.now(),
+                            lastStockUpdate: DateTime.now(),
                           );
                           storage.update(updated);
                         },
@@ -224,6 +226,7 @@ class MedicineDetailScreen extends StatelessWidget {
                           final updated = medicine.copyWith(
                             currentStock: medicine.currentStock + 10,
                             updatedAt: DateTime.now(),
+                            lastStockUpdate: DateTime.now(),
                           );
                           storage.update(updated);
                         },
