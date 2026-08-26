@@ -34,11 +34,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  /// 检查并发送库存不足通知
   void _checkNotifications() {
     final storage = context.read<StorageService>();
     NotificationService().checkAndNotify(storage.medicines);
   }
 
+  /// 新建药箱并切换到新药箱页
   Future<void> _addBox() async {
     final name = await _showAddBoxDialog();
     if (name == null) return;
@@ -61,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// 弹出新建药箱输入框，返回非空药箱名
   Future<String?> _showAddBoxDialog() {
     final controller = TextEditingController();
     return showDialog<String>(
@@ -90,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// 处理药箱菜单命令（新建 / 重命名 / 删除）
   Future<void> _handleBoxAction(_BoxAction action, MedicineBox box) async {
     final storage = context.read<StorageService>();
     switch (action) {
@@ -119,6 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// 弹出重命名药箱输入框，返回非空新名称
   Future<String?> _showRenameBoxDialog(String currentName) {
     final controller = TextEditingController(text: currentName);
     return showDialog<String>(
@@ -148,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// 弹出删除药箱确认框
   Future<bool> _confirmDeleteBox(MedicineBox box) async {
     final result = await showDialog<bool>(
       context: context,
@@ -172,11 +178,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return result ?? false;
   }
 
+  /// 跳转到添加药品页，返回后刷新通知
   void _navigateToAdd(String boxId) async {
     await Navigator.pushNamed(context, '/medicine/add', arguments: boxId);
     _checkNotifications();
   }
 
+  /// 切换到下一个药箱
   void _goToNext() {
     if (_pageController.hasClients) {
       _pageController.nextPage(
@@ -186,6 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// 切换到上一个药箱
   void _goToPrevious() {
     if (_pageController.hasClients) {
       _pageController.previousPage(
@@ -323,6 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// 药箱指示点（当前药箱高亮并拉长）
   Widget _dot(bool active, ThemeData theme) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),

@@ -12,8 +12,6 @@ class DrugLookupResult {
   final String? periodUnit;
   final int? timesPerPeriod;
   final double? dosagePerTime;
-  final String rawUsage;
-  final String rawInstructions;
 
   const DrugLookupResult({
     required this.name,
@@ -24,8 +22,6 @@ class DrugLookupResult {
     this.periodUnit,
     this.timesPerPeriod,
     this.dosagePerTime,
-    required this.rawUsage,
-    required this.rawInstructions,
   });
 }
 
@@ -212,8 +208,6 @@ class MedicineLookupService {
       periodUnit: periodUnit,
       timesPerPeriod: times,
       dosagePerTime: perTime,
-      rawUsage: usage,
-      rawInstructions: content,
     );
   }
 

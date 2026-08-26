@@ -151,15 +151,6 @@ class StorageService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 根据 ID 查找药箱
-  MedicineBox? findBoxById(String id) {
-    try {
-      return _boxes.firstWhere((b) => b.id == id);
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// 重命名药箱
   Future<void> renameBox(String id, String name) async {
     final index = _boxes.indexWhere((b) => b.id == id);
@@ -222,8 +213,4 @@ class StorageService extends ChangeNotifier {
       return null;
     }
   }
-
-  /// 获取需要提醒的药品列表
-  List<Medicine> get alertMedicines =>
-      _medicines.where((m) => m.needsAlert).toList();
 }

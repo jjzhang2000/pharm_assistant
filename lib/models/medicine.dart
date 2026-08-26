@@ -24,7 +24,6 @@ class Medicine {
   /// '周'/'月'：下一轮各次服用的日期（仅日期，服用时刻由 doseHour 决定）。
   /// 本轮服完后按周期自动推进到下一轮。天安排不用此字段。
   final List<DateTime> nextRoundDates;
-  final String? notes;
   /// 所属药箱 ID（空串表示尚未归属，加载时归入默认药箱）
   final String boxId;
 
@@ -47,7 +46,6 @@ class Medicine {
     this.doseSlots = const [],
     this.doseHour,
     this.nextRoundDates = const [],
-    this.notes,
     this.boxId = '',
   });
 
@@ -375,7 +373,6 @@ class Medicine {
               json['timesPerPeriod'] as int? ??
                   json['timesPerDay'] as int? ??
                   1),
-      notes: json['notes'] as String?,
       boxId: json['boxId'] as String? ?? '',
     );
   }
@@ -406,7 +403,6 @@ class Medicine {
         'nextRoundDates': nextRoundDates
             .map((d) => DateTime(d.year, d.month, d.day).toIso8601String())
             .toList(),
-      if (notes != null) 'notes': notes,
     };
   }
 
@@ -429,7 +425,6 @@ class Medicine {
     Object? doseSlots = _sentinel,
     Object? doseHour = _sentinel,
     Object? nextRoundDates = _sentinel,
-    String? notes,
     String? boxId,
   }) {
     return Medicine(
@@ -457,7 +452,6 @@ class Medicine {
       nextRoundDates: nextRoundDates == _sentinel
           ? this.nextRoundDates
           : ((nextRoundDates as List<DateTime>?) ?? const <DateTime>[]),
-      notes: notes ?? this.notes,
       boxId: boxId ?? this.boxId,
     );
   }

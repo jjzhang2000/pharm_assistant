@@ -20,6 +20,9 @@
 | Provider | 状态管理 |
 | path_provider | 获取应用文档目录 |
 | flutter_local_notifications | 本地推送通知 |
+| mobile_scanner | 扫描药盒条码/二维码 |
+| http | 药品联网查询（天行数据接口） |
+| material_symbols_icons | Material Symbols 图标 |
 | intl | 日期格式化 |
 | JSON 文件 | 数据持久化（`medicines.json`） |
 
@@ -34,11 +37,13 @@ lib/
 │   └── medicine_box.dart              # 药箱数据模型
 ├── services/
 │   ├── storage_service.dart           # JSON 文件读写服务
-│   └── notification_service.dart      # 推送通知服务
+│   ├── notification_service.dart      # 推送通知服务
+│   └── medicine_lookup_service.dart   # 药品联网查询与扫码解析
 ├── screens/
 │   ├── home_screen.dart               # 首页（多药箱切换）
 │   ├── add_edit_medicine_screen.dart   # 添加/编辑药品
-│   └── medicine_detail_screen.dart    # 药品详情
+│   ├── medicine_detail_screen.dart    # 药品详情
+│   └── scan_screen.dart               # 扫码录入
 └── widgets/
     ├── medicine_card.dart             # 药品卡片组件
     └── empty_state.dart               # 空状态组件
