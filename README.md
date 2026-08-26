@@ -4,6 +4,7 @@
 
 ## 功能特性
 
+- **多药箱管理**：支持创建多个药箱，每个药箱独立存放药品，AppBar 左右滑动切换
 - **药品管理**：手动录入药品信息（名称、剂量、频次、库存等）
 - **服用时间安排**：支持每天固定时段、每周/每月服用计划，按具体时刻自动扣减
 - **智能预测**：按用药计划精确扣减库存，并计算剩余天数（长周期按离散剂量、短周期锚定到下次服药时间）
@@ -29,12 +30,13 @@ lib/
 ├── main.dart                          # 应用入口
 ├── app.dart                           # MaterialApp 配置
 ├── models/
-│   └── medicine.dart                  # 药品数据模型
+│   ├── medicine.dart                  # 药品数据模型
+│   └── medicine_box.dart              # 药箱数据模型
 ├── services/
 │   ├── storage_service.dart           # JSON 文件读写服务
 │   └── notification_service.dart      # 推送通知服务
 ├── screens/
-│   ├── home_screen.dart               # 首页（药品列表）
+│   ├── home_screen.dart               # 首页（多药箱切换）
 │   ├── add_edit_medicine_screen.dart   # 添加/编辑药品
 │   └── medicine_detail_screen.dart    # 药品详情
 └── widgets/
@@ -70,7 +72,7 @@ APK 输出路径：`build/app/outputs/flutter-apk/app-release.apk`
 
 ## 数据存储
 
-药品数据存储在应用文档目录下的 `medicines.json` 文件中，格式为 JSON 数组。个人用药数量通常较少（< 10 种），全量读写性能完全足够，无需数据库。
+药箱与药品数据存储在应用文档目录下的 `medicines.json` 文件中，格式为 `{ "boxes": [...], "medicines": [...] }`。个人用药数量通常较少（< 10 种），全量读写性能完全足够，无需数据库。
 
 ## 许可证
 

@@ -5,13 +5,21 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/medicine.dart';
+import '../models/medicine_box.dart';
 import 'notification_service.dart';
 
 class StorageService extends ChangeNotifier {
+  List<MedicineBox> _boxes = [];
   List<Medicine> _medicines = [];
   bool _initialized = false;
 
+  List<MedicineBox> get boxes => List.unmodifiable(_boxes);
+
   List<Medicine> get medicines => List.unmodifiable(_medicines);
+
+  /// 指定药箱内的药品
+  List<Medicine> medicinesForBox(String boxId) =>
+      _medicines.where((m) => m.boxId == boxId).toList();
 
   bool get initialized => _initialized;
 
@@ -21,20 +29,61 @@ class StorageService extends ChangeNotifier {
     return File('${dir.path}/medicines.json');
   }
 
-  /// 从 JSON 文件加载药品列表，并自动扣减库存
+  /// 从 JSON 文件加载药箱与药品列表，迁移旧数据并自动扣减库存
   Future<void> load() async {
     try {
       final file = await _getFile();
       if (await file.exists()) {
         final content = await file.readAsString();
-        final List<dynamic> jsonList = jsonDecode(content);
-        _medicines =
-            jsonList.map((e) => Medicine.fromJson(e as Map<String, dynamic>)).toList();
-        await _autoDeductStock();
+        final decoded = jsonDecode(content);
+        if (decoded is List) {
+          // 旧格式：纯药品数组
+          _medicines = decoded
+              .map((e) => Medicine.fromJson(e as Map<String, dynamic>))
+              .toList();
+          _boxes = [];
+        } else if (decoded is Map<String, dynamic>) {
+          _boxes = (decoded['boxes'] as List?)
+                  ?.map((e) => MedicineBox.fromJson(e as Map<String, dynamic>))
+                  .toList() ??
+              [];
+          _medicines = (decoded['medicines'] as List?)
+                  ?.map((e) => Medicine.fromJson(e as Map<String, dynamic>))
+                  .toList() ??
+              [];
+        }
       }
     } catch (e) {
       debugPrint('加载数据失败: $e');
     }
+
+    // 确保至少存在一个默认药箱
+    var migrated = false;
+    if (_boxes.isEmpty) {
+      _boxes.add(MedicineBox(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: '小药箱',
+        createdAt: DateTime.now(),
+      ));
+      migrated = true;
+    }
+    final defaultBoxId = _boxes.first.id;
+
+    // 未归属的药品归入默认药箱
+    for (int i = 0; i < _medicines.length; i++) {
+      final m = _medicines[i];
+      if (m.boxId.isEmpty || !_boxes.any((b) => b.id == m.boxId)) {
+        _medicines[i] = m.copyWith(boxId: defaultBoxId);
+        migrated = true;
+      }
+    }
+
+    if (migrated) {
+      await _save();
+    }
+
+    await _autoDeductStock();
+
     _initialized = true;
     notifyListeners();
   }
@@ -77,14 +126,37 @@ class StorageService extends ChangeNotifier {
     }
   }
 
-  /// 保存药品列表到 JSON 文件
+  /// 保存药箱与药品列表到 JSON 文件
   Future<void> _save() async {
     try {
       final file = await _getFile();
-      final jsonList = _medicines.map((m) => m.toJson()).toList();
-      await file.writeAsString(jsonEncode(jsonList));
+      final data = {
+        'boxes': _boxes.map((b) => b.toJson()).toList(),
+        'medicines': _medicines.map((m) => m.toJson()).toList(),
+      };
+      await file.writeAsString(jsonEncode(data));
     } catch (e) {
       debugPrint('保存数据失败: $e');
+    }
+  }
+
+  /// 新增药箱
+  Future<void> addBox(String name) async {
+    _boxes.add(MedicineBox(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: name,
+      createdAt: DateTime.now(),
+    ));
+    await _save();
+    notifyListeners();
+  }
+
+  /// 根据 ID 查找药箱
+  MedicineBox? findBoxById(String id) {
+    try {
+      return _boxes.firstWhere((b) => b.id == id);
+    } catch (_) {
+      return null;
     }
   }
 

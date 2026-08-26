@@ -9,8 +9,9 @@ import 'scan_screen.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final String? medicineId;
+  final String? boxId;
 
-  const AddEditMedicineScreen({super.key, this.medicineId});
+  const AddEditMedicineScreen({super.key, this.medicineId, this.boxId});
 
   bool get isEditing => medicineId != null;
 
@@ -347,6 +348,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         nextRoundDates: rounds,
         createdAt: now,
         updatedAt: now,
+        boxId: widget.boxId ?? '',
       );
       await storage.add(medicine);
     }

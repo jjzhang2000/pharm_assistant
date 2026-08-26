@@ -33,7 +33,10 @@ class MedicineApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const HomeScreen(),
-        '/medicine/add': (context) => const AddEditMedicineScreen(),
+        '/medicine/add': (context) {
+          final boxId = ModalRoute.of(context)!.settings.arguments as String;
+          return AddEditMedicineScreen(boxId: boxId);
+        },
         '/medicine/edit': (context) {
           final id = ModalRoute.of(context)!.settings.arguments as String;
           return AddEditMedicineScreen(medicineId: id);

@@ -25,6 +25,8 @@ class Medicine {
   /// 本轮服完后按周期自动推进到下一轮。天安排不用此字段。
   final List<DateTime> nextRoundDates;
   final String? notes;
+  /// 所属药箱 ID（空串表示尚未归属，加载时归入默认药箱）
+  final String boxId;
 
   Medicine({
     required this.id,
@@ -46,6 +48,7 @@ class Medicine {
     this.doseHour,
     this.nextRoundDates = const [],
     this.notes,
+    this.boxId = '',
   });
 
   /// 周期换算天数
@@ -373,6 +376,7 @@ class Medicine {
                   json['timesPerDay'] as int? ??
                   1),
       notes: json['notes'] as String?,
+      boxId: json['boxId'] as String? ?? '',
     );
   }
 
@@ -380,6 +384,7 @@ class Medicine {
     return {
       'id': id,
       'name': name,
+      'boxId': boxId,
       'dosageStrength': dosageStrength,
       'dosageStrengthUnit': dosageStrengthUnit,
       'form': form,
@@ -425,6 +430,7 @@ class Medicine {
     Object? doseHour = _sentinel,
     Object? nextRoundDates = _sentinel,
     String? notes,
+    String? boxId,
   }) {
     return Medicine(
       id: id ?? this.id,
@@ -452,6 +458,7 @@ class Medicine {
           ? this.nextRoundDates
           : ((nextRoundDates as List<DateTime>?) ?? const <DateTime>[]),
       notes: notes ?? this.notes,
+      boxId: boxId ?? this.boxId,
     );
   }
 }
