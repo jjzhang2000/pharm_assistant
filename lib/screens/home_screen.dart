@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../models/medicine.dart';
+import '../models/medicine_box.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/medicine_card.dart';
@@ -90,6 +90,88 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _handleBoxAction(_BoxAction action, MedicineBox box) async {
+    final storage = context.read<StorageService>();
+    switch (action) {
+      case _BoxAction.newBox:
+        await _addBox();
+        break;
+      case _BoxAction.rename:
+        final name = await _showRenameBoxDialog(box.name);
+        if (name == null || !mounted) return;
+        await storage.renameBox(box.id, name);
+        break;
+      case _BoxAction.delete:
+        final confirmed = await _confirmDeleteBox(box);
+        if (!confirmed || !mounted) return;
+        final index = _currentIndex;
+        await storage.deleteBox(box.id);
+        if (!mounted) return;
+        final newCount = storage.boxes.length;
+        final newIndex = index.clamp(0, newCount - 1);
+        setState(() => _currentIndex = newIndex);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _pageController.hasClients) {
+            _pageController.jumpToPage(newIndex);
+          }
+        });
+        break;
+    }
+  }
+
+  Future<String?> _showRenameBoxDialog(String currentName) {
+    final controller = TextEditingController(text: currentName);
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重命名药箱'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '请输入新的药箱名'),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    ).then((value) {
+      controller.dispose();
+      return (value == null || value.isEmpty) ? null : value;
+    });
+  }
+
+  Future<bool> _confirmDeleteBox(MedicineBox box) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认删除'),
+        content: Text('确定要删除药箱「${box.name}」吗？其中的药品将一并删除，此操作不可撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   void _navigateToAdd(String boxId) async {
     await Navigator.pushNamed(context, '/medicine/add', arguments: boxId);
     _checkNotifications();
@@ -163,10 +245,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 foregroundColor: theme.colorScheme.onPrimaryContainer,
                 title: Text(currentBox.name),
                 actions: [
-                  IconButton(
-                    onPressed: _addBox,
-                    tooltip: '新药箱',
-                    icon: const Icon(Symbols.library_add),
+                  PopupMenuButton<_BoxAction>(
+                    tooltip: '更多',
+                    icon: const Icon(Icons.more_horiz),
+                    onSelected: (action) => _handleBoxAction(action, currentBox),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: _BoxAction.newBox,
+                        child: Text('新药箱'),
+                      ),
+                      const PopupMenuItem(
+                        value: _BoxAction.rename,
+                        child: Text('重命名'),
+                      ),
+                      PopupMenuItem(
+                        value: _BoxAction.delete,
+                        enabled: boxes.length > 1,
+                        child: const Text('删除'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -241,3 +338,5 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+enum _BoxAction { newBox, rename, delete }

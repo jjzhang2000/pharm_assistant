@@ -160,6 +160,33 @@ class StorageService extends ChangeNotifier {
     }
   }
 
+  /// 重命名药箱
+  Future<void> renameBox(String id, String name) async {
+    final index = _boxes.indexWhere((b) => b.id == id);
+    if (index != -1) {
+      final old = _boxes[index];
+      _boxes[index] = MedicineBox(
+        id: old.id,
+        name: name,
+        createdAt: old.createdAt,
+      );
+      await _save();
+      notifyListeners();
+    }
+  }
+
+  /// 删除药箱及其中的所有药品
+  Future<void> deleteBox(String id) async {
+    final notifier = NotificationService();
+    for (final m in _medicines.where((m) => m.boxId == id)) {
+      await notifier.cancelForMedicine(m.id);
+    }
+    _medicines.removeWhere((m) => m.boxId == id);
+    _boxes.removeWhere((b) => b.id == id);
+    await _save();
+    notifyListeners();
+  }
+
   /// 添加药品
   Future<void> add(Medicine medicine) async {
     _medicines.add(medicine);
