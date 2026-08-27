@@ -16,8 +16,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final PageController _pageController = PageController();
-  int _currentIndex = 0;
+  final PageController _pageController = PageController(initialPage: 1);
+  int _currentIndex = 1;
   double _dragDelta = 0;
 
   @override
@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await storage.addBox(name);
 
     if (!mounted) return;
-    final newIndex = storage.boxes.length - 1;
+    final newIndex = storage.boxes.length;
     // 等待新页面挂载后再跳转
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _pageController.hasClients) {
@@ -108,15 +108,15 @@ class _HomeScreenState extends State<HomeScreen> {
       case _BoxAction.delete:
         final confirmed = await _confirmDeleteBox(box);
         if (!confirmed || !mounted) return;
-        final index = _currentIndex;
+        final boxIndex = _currentIndex - 1;
         await storage.deleteBox(box.id);
         if (!mounted) return;
         final newCount = storage.boxes.length;
-        final newIndex = index.clamp(0, newCount - 1);
-        setState(() => _currentIndex = newIndex);
+        final newBoxIndex = boxIndex.clamp(0, newCount - 1);
+        setState(() => _currentIndex = newBoxIndex + 1);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _pageController.hasClients) {
-            _pageController.jumpToPage(newIndex);
+            _pageController.jumpToPage(newBoxIndex + 1);
           }
         });
         break;
@@ -231,8 +231,11 @@ class _HomeScreenState extends State<HomeScreen> {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
-        final safeIndex = _currentIndex.clamp(0, boxes.length - 1);
-        final currentBox = boxes[safeIndex];
+        final onShortagePage = _currentIndex == 0;
+        final boxIndex = onShortagePage
+            ? 0
+            : (_currentIndex - 1).clamp(0, boxes.length - 1);
+        final currentBox = boxes[boxIndex];
 
         return Scaffold(
           appBar: PreferredSize(
@@ -252,28 +255,29 @@ class _HomeScreenState extends State<HomeScreen> {
               child: AppBar(
                 backgroundColor: theme.colorScheme.primaryContainer,
                 foregroundColor: theme.colorScheme.onPrimaryContainer,
-                title: Text(currentBox.name),
+                title: Text(onShortagePage ? '短缺药品' : currentBox.name),
                 actions: [
-                  PopupMenuButton<_BoxAction>(
-                    tooltip: '更多',
-                    icon: const Icon(Icons.more_horiz),
-                    onSelected: (action) => _handleBoxAction(action, currentBox),
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: _BoxAction.newBox,
-                        child: Text('新药箱'),
-                      ),
-                      const PopupMenuItem(
-                        value: _BoxAction.rename,
-                        child: Text('重命名'),
-                      ),
-                      PopupMenuItem(
-                        value: _BoxAction.delete,
-                        enabled: boxes.length > 1,
-                        child: const Text('删除'),
-                      ),
-                    ],
-                  ),
+                  if (!onShortagePage)
+                    PopupMenuButton<_BoxAction>(
+                      tooltip: '更多',
+                      icon: const Icon(Icons.more_horiz),
+                      onSelected: (action) => _handleBoxAction(action, currentBox),
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: _BoxAction.newBox,
+                          child: Text('新药箱'),
+                        ),
+                        const PopupMenuItem(
+                          value: _BoxAction.rename,
+                          child: Text('重命名'),
+                        ),
+                        PopupMenuItem(
+                          value: _BoxAction.delete,
+                          enabled: boxes.length > 1,
+                          child: const Text('删除'),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -284,9 +288,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: PageView.builder(
                   controller: _pageController,
                   onPageChanged: (i) => setState(() => _currentIndex = i),
-                  itemCount: boxes.length,
+                  itemCount: boxes.length + 1,
                   itemBuilder: (context, index) {
-                    final box = boxes[index];
+                    if (index == 0) {
+                      return _buildShortagePage(storage);
+                    }
+                    final box = boxes[index - 1];
                     final medicines =
                         _sorted(storage.medicinesForBox(box.id));
 
@@ -315,20 +322,124 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     for (var i = 0; i < boxes.length; i++)
-                      _dot(i == safeIndex, theme),
+                      _dot(!onShortagePage && i == boxIndex, theme),
                   ],
                 ),
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () => _navigateToAdd(currentBox.id),
-            shape: const CircleBorder(),
-            tooltip: '添加药品',
-            child: const Icon(Icons.add),
-          ),
+          floatingActionButton: onShortagePage
+              ? null
+              : FloatingActionButton(
+                  onPressed: () => _navigateToAdd(currentBox.id),
+                  shape: const CircleBorder(),
+                  tooltip: '添加药品',
+                  child: const Icon(Icons.add),
+                ),
         );
       },
+    );
+  }
+
+  /// 短缺药品页：按药箱分组显示剩余天数不足的药品
+  Widget _buildShortagePage(StorageService storage) {
+    final theme = Theme.of(context);
+    final cards = <Widget>[];
+
+    for (final box in storage.boxes) {
+      final shortage = storage
+          .medicinesForBox(box.id)
+          .where((m) => m.needsAlert)
+          .toList()
+        ..sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
+      if (shortage.isNotEmpty) {
+        cards.add(_buildShortageCard(box, shortage, theme));
+      }
+    }
+
+    if (cards.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '暂无短缺药品',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: cards,
+    );
+  }
+
+  /// 单个药箱的短缺药品卡片
+  Widget _buildShortageCard(
+      MedicineBox box, List<Medicine> medicines, ThemeData theme) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.inventory_2_outlined,
+                    size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    box.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            for (final m in medicines)
+              Padding(
+                padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        m.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${m.remainingDays.floor()} 天',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
