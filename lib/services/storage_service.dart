@@ -64,10 +64,25 @@ class StorageService extends ChangeNotifier {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: '小药箱',
         createdAt: DateTime.now(),
+        color: MedicineBox.boxPalette.first,
       ));
       migrated = true;
     }
     final defaultBoxId = _boxes.first.id;
+
+    // 为未分配或颜色重复的药箱分配颜色
+    final usedColors = <int>{};
+    for (int i = 0; i < _boxes.length; i++) {
+      final b = _boxes[i];
+      if (b.color == 0 || usedColors.contains(b.color)) {
+        final c = MedicineBox.nextColor(usedColors);
+        _boxes[i] = b.copyWith(color: c);
+        usedColors.add(c);
+        migrated = true;
+      } else {
+        usedColors.add(b.color);
+      }
+    }
 
     // 未归属的药品归入默认药箱
     for (int i = 0; i < _medicines.length; i++) {
@@ -142,10 +157,12 @@ class StorageService extends ChangeNotifier {
 
   /// 新增药箱
   Future<void> addBox(String name) async {
+    final usedColors = _boxes.map((b) => b.color).toSet();
     _boxes.add(MedicineBox(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       createdAt: DateTime.now(),
+      color: MedicineBox.nextColor(usedColors),
     ));
     await _save();
     notifyListeners();
@@ -160,6 +177,7 @@ class StorageService extends ChangeNotifier {
         id: old.id,
         name: name,
         createdAt: old.createdAt,
+        color: old.color,
       );
       await _save();
       notifyListeners();

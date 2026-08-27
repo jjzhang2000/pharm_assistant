@@ -253,8 +253,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               },
               child: AppBar(
-                backgroundColor: theme.colorScheme.primaryContainer,
-                foregroundColor: theme.colorScheme.onPrimaryContainer,
+                backgroundColor: onShortagePage
+                    ? const Color(0xFFE8B4B4)
+                    : Color(currentBox.color),
+                foregroundColor: theme.colorScheme.onSurface,
                 title: Text(onShortagePage ? '短缺药品' : currentBox.name),
                 actions: [
                   if (!onShortagePage)
@@ -388,57 +390,70 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 单个药箱的短缺药品卡片
   Widget _buildShortageCard(
       MedicineBox box, List<Medicine> medicines, ThemeData theme) {
+    final titleColor = theme.colorScheme.onSurface;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 标题行：用药箱颜色作为底色
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: Color(box.color),
+            child: Row(
               children: [
                 Icon(Icons.inventory_2_outlined,
-                    size: 18, color: theme.colorScheme.primary),
+                    size: 18, color: titleColor),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     box.name,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: titleColor,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            for (final m in medicines)
-              Padding(
-                padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        m.name,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
-                      ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final m in medicines)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            m.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${m.remainingDays.floor()} 天',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${m.remainingDays.floor()} 天',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
