@@ -7,6 +7,7 @@ import '../services/medicine_lookup_service.dart';
 import '../services/storage_service.dart';
 import 'scan_screen.dart';
 
+/// 添加/编辑药品表单：按「药品 / 服用 / 库存」三组录入，支持扫码与联网查询
 class AddEditMedicineScreen extends StatefulWidget {
   final String? medicineId;
   final String? boxId;

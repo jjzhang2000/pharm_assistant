@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/medicine.dart';
 import '../services/storage_service.dart';
 
+/// 药品详情页：展示库存与用药计划，提供编辑、移动、删除等操作
 class MedicineDetailScreen extends StatelessWidget {
   final String medicineId;
 
@@ -36,6 +37,8 @@ class MedicineDetailScreen extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 tooltip: '编辑',
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                constraints: const BoxConstraints(),
                 onPressed: () async {
                   await Navigator.pushNamed(
                     context,
@@ -44,10 +47,36 @@ class MedicineDetailScreen extends StatelessWidget {
                   );
                 },
               ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                tooltip: '删除',
-                onPressed: () => _confirmDelete(context, storage, medicine),
+              PopupMenuButton<_MedicineAction>(
+                tooltip: '更多',
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(Icons.more_horiz),
+                ),
+                onSelected: (action) =>
+                    _handleAction(context, storage, medicine, action),
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: _MedicineAction.move,
+                    child: Row(
+                      children: [
+                        Icon(Icons.drive_file_move_outline, size: 20),
+                        SizedBox(width: 12),
+                        Text('移动'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: _MedicineAction.delete,
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, size: 20),
+                        SizedBox(width: 12),
+                        Text('删除'),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -292,6 +321,123 @@ class MedicineDetailScreen extends StatelessWidget {
       ),
     );
   }
+
+  /// 处理「更多」菜单命令
+  Future<void> _handleAction(BuildContext context, StorageService storage,
+      Medicine medicine, _MedicineAction action) async {
+    switch (action) {
+      case _MedicineAction.move:
+        await _moveMedicine(context, storage, medicine);
+        break;
+      case _MedicineAction.delete:
+        _confirmDelete(context, storage, medicine);
+        break;
+    }
+  }
+
+  /// 将药品移动到另一个药箱（或新建药箱后移入）
+  Future<void> _moveMedicine(
+      BuildContext context, StorageService storage, Medicine medicine) async {
+    final target = await _showMoveDialog(context, storage, medicine);
+    if (target == null || !context.mounted) return;
+
+    String? targetBoxId;
+    if (target.isNew) {
+      final name = await _showNewBoxNameDialog(context);
+      if (name == null || !context.mounted) return;
+      await storage.addBox(name);
+      targetBoxId = storage.boxes.last.id;
+    } else {
+      targetBoxId = target.boxId;
+    }
+
+    if (targetBoxId == null || !context.mounted) return;
+    await storage.update(
+        medicine.copyWith(boxId: targetBoxId, updatedAt: DateTime.now()));
+    if (!context.mounted) return;
+    Navigator.pop(context, targetBoxId);
+  }
+
+  /// 弹出药箱选择列表（不含当前药箱），最后一项为「新药箱」
+  Future<_MoveTarget?> _showMoveDialog(
+      BuildContext context, StorageService storage, Medicine medicine) {
+    final otherBoxes =
+        storage.boxes.where((b) => b.id != medicine.boxId).toList();
+    return showDialog<_MoveTarget>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('移动到'),
+        children: [
+          for (final box in otherBoxes)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, _MoveTarget.box(box.id)),
+              child: Row(
+                children: [
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Color(box.color),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      box.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(ctx).textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, const _MoveTarget.newBox()),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(Icons.add_circle_outline,
+                    size: 22, color: Theme.of(ctx).colorScheme.primary),
+                const SizedBox(width: 8),
+                const Text('新药箱'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 弹出新建药箱输入框，返回非空药箱名
+  Future<String?> _showNewBoxNameDialog(BuildContext context) {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新药箱'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '请输入药箱名'),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    ).then((value) {
+      controller.dispose();
+      return (value == null || value.isEmpty) ? null : value;
+    });
+  }
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -357,4 +503,18 @@ class _InfoRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 「更多」菜单命令
+enum _MedicineAction { move, delete }
+
+/// 移动目标：现有药箱（boxId）或新建药箱（isNew）
+class _MoveTarget {
+  final String? boxId;
+  final bool isNew;
+
+  const _MoveTarget.box(this.boxId) : isNew = false;
+  const _MoveTarget.newBox()
+      : boxId = null,
+        isNew = true;
 }

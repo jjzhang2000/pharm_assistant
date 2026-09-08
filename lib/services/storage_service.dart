@@ -8,6 +8,7 @@ import '../models/medicine.dart';
 import '../models/medicine_box.dart';
 import 'notification_service.dart';
 
+/// 全局唯一的药品/药箱 JSON 文件存储服务，通过 [ChangeNotifier] 驱动界面刷新
 class StorageService extends ChangeNotifier {
   List<MedicineBox> _boxes = [];
   List<Medicine> _medicines = [];

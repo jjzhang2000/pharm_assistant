@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// 空状态占位视图：仅显示一个大个的医疗图标
 class EmptyState extends StatelessWidget {
   const EmptyState({super.key});
 

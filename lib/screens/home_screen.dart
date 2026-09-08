@@ -8,6 +8,7 @@ import '../services/notification_service.dart';
 import '../widgets/medicine_card.dart';
 import '../widgets/empty_state.dart';
 
+/// 首页：多药箱左右滑动切换 + 短缺药品负一页；药品卡片支持长按拖动移动
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController(initialPage: 1);
   int _currentIndex = 1;
   double _dragDelta = 0;
+  bool _draggingMedicine = false;
 
   @override
   void initState() {
@@ -184,6 +186,209 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkNotifications();
   }
 
+  /// 切换到指定药箱
+  void _goToBox(String boxId) {
+    final storage = context.read<StorageService>();
+    final boxIndex = storage.boxes.indexWhere((b) => b.id == boxId);
+    if (boxIndex < 0) return;
+    final pageIndex = boxIndex + 1;
+    if (pageIndex == _currentIndex) return;
+    setState(() => _currentIndex = pageIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _pageController.hasClients) {
+        _pageController.jumpToPage(pageIndex);
+      }
+    });
+  }
+
+  /// 长按拖动时展示的全屏药箱概览（类似安卓桌面的各页面缩略视图）
+  Widget _buildBoxOverview(StorageService storage, ThemeData theme) {
+    return Positioned.fill(
+      child: Material(
+        color: Colors.black54,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12, left: 4),
+                  child: Text(
+                    '拖动药品到目标药箱',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 240,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 0.85,
+                    ),
+                    itemCount: storage.boxes.length + 1,
+                    itemBuilder: (context, i) {
+                      if (i == storage.boxes.length) {
+                        return _buildNewBoxTarget(theme);
+                      }
+                      final box = storage.boxes[i];
+                      return DragTarget<Medicine>(
+                        onWillAcceptWithDetails: (d) =>
+                            d.data.boxId != box.id,
+                        onAcceptWithDetails: (d) =>
+                            _moveMedicine(d.data, box.id),
+                        builder: (context, candidate, rejected) {
+                          final active = candidate.isNotEmpty;
+                          return AnimatedScale(
+                            scale: active ? 1.05 : 1.0,
+                            duration: const Duration(milliseconds: 150),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Color(box.color),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: active
+                                      ? theme.colorScheme.primary
+                                      : Colors.white24,
+                                  width: active ? 3 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 44,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text(
+                                      box.name,
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${storage.medicinesForBox(box.id).length} 种药品',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 概览中的「新药箱」卡片：拖入即新建药箱并移入
+  Widget _buildNewBoxTarget(ThemeData theme) {
+    return DragTarget<Medicine>(
+      onAcceptWithDetails: (d) => _moveMedicineToNewBox(d.data),
+      builder: (context, candidate, rejected) {
+        final active = candidate.isNotEmpty;
+        return AnimatedScale(
+          scale: active ? 1.05 : 1.0,
+          duration: const Duration(milliseconds: 150),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: active ? theme.colorScheme.primary : Colors.white24,
+                width: active ? 3 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.add, size: 44, color: Colors.white),
+                const SizedBox(height: 8),
+                Text(
+                  '新药箱',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 新建一个不重名的药箱，并把药品移入
+  Future<void> _moveMedicineToNewBox(Medicine medicine) async {
+    final storage = context.read<StorageService>();
+    final name = _uniqueBoxName(storage);
+    await storage.addBox(name);
+    final newBoxId = storage.boxes.last.id;
+    await storage.update(
+        medicine.copyWith(boxId: newBoxId, updatedAt: DateTime.now()));
+  }
+
+  /// 生成不重名的药箱名：新药箱、新药箱2、新药箱3……
+  String _uniqueBoxName(StorageService storage) {
+    final existing = storage.boxes.map((b) => b.name).toSet();
+    if (!existing.contains('新药箱')) return '新药箱';
+    var i = 2;
+    while (existing.contains('新药箱$i')) {
+      i++;
+    }
+    return '新药箱$i';
+  }
+
+  /// 拖动时跟随手指的药品预览
+  Widget _medicineDragFeedback(Medicine medicine, ThemeData theme) {
+    return Material(
+      color: Colors.transparent,
+      child: Card(
+        elevation: 6,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Text(
+            medicine.name,
+            style: theme.textTheme.titleMedium,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 把药品移动到指定药箱
+  void _moveMedicine(Medicine medicine, String boxId) {
+    if (medicine.boxId == boxId) return;
+    context.read<StorageService>().update(
+        medicine.copyWith(boxId: boxId, updatedAt: DateTime.now()));
+  }
+
   /// 切换到下一个药箱
   void _goToNext() {
     if (_pageController.hasClients) {
@@ -284,10 +489,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          body: Column(
+          body: Stack(
             children: [
-              Expanded(
-                child: PageView.builder(
+              Column(
+                children: [
+                  Expanded(
+                    child: PageView.builder(
                   controller: _pageController,
                   onPageChanged: (i) => setState(() => _currentIndex = i),
                   itemCount: boxes.length + 1,
@@ -310,16 +517,31 @@ class _HomeScreenState extends State<HomeScreen> {
                         final medicine = medicines[i];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: MedicineCard(medicine: medicine),
+                          child: LongPressDraggable<Medicine>(
+                            data: medicine,
+                            onDragStarted: () =>
+                                setState(() => _draggingMedicine = true),
+                            onDragEnd: (_) =>
+                                setState(() => _draggingMedicine = false),
+                            onDraggableCanceled: (_, __) =>
+                                setState(() => _draggingMedicine = false),
+                            feedback: _medicineDragFeedback(medicine, theme),
+                            child: MedicineCard(
+                              medicine: medicine,
+                              onMovedToBox: _goToBox,
+                            ),
+                          ),
                         );
                       },
                     );
                   },
                 ),
               ),
-              // 页面底部药箱指示点
+              // 页面底部药箱指示点（随系统底部导航栏显示/隐藏动态上移）
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.only(
+                  bottom: 8 + MediaQuery.of(context).padding.bottom,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -328,6 +550,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+                ],
+              ),
+              if (_draggingMedicine) _buildBoxOverview(storage, theme),
             ],
           ),
           floatingActionButton: onShortagePage

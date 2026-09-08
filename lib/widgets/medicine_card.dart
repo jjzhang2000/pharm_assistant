@@ -4,10 +4,16 @@ import 'package:provider/provider.dart';
 import '../models/medicine.dart';
 import '../services/storage_service.dart';
 
+/// 药品卡片：展示名称/剂量/剩余天数，支持快速加减库存与长按拖动移动
 class MedicineCard extends StatelessWidget {
   final Medicine medicine;
+  final void Function(String boxId) onMovedToBox;
 
-  const MedicineCard({super.key, required this.medicine});
+  const MedicineCard({
+    super.key,
+    required this.medicine,
+    required this.onMovedToBox,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +32,12 @@ class MedicineCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.pushNamed(context, '/medicine/detail',
+        onTap: () async {
+          final result = await Navigator.pushNamed(context, '/medicine/detail',
               arguments: medicine.id);
+          if (result is String) {
+            onMovedToBox(result);
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16),

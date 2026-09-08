@@ -1,3 +1,4 @@
+/// 药品数据模型：包含用药计划、库存与判断剩余可用天数、是否需要提醒等逻辑
 class Medicine {
   static const _sentinel = Object();
 

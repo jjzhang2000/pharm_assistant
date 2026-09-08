@@ -140,16 +140,6 @@ class NotificationService {
     }
   }
 
-  /// 取消所有通知
-  Future<void> cancelAll() async {
-    if (!_initialized) return;
-    try {
-      await _plugin.cancelAll();
-    } catch (e) {
-      debugPrint('取消通知失败: $e');
-    }
-  }
-
   /// 取消指定药品的定时通知
   Future<void> cancelForMedicine(String medicineId) async {
     if (!_initialized) return;

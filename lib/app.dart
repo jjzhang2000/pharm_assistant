@@ -5,6 +5,7 @@ import 'screens/home_screen.dart';
 import 'screens/add_edit_medicine_screen.dart';
 import 'screens/medicine_detail_screen.dart';
 
+/// 应用根组件：配置主题、国际化与路由表
 class MedicineApp extends StatelessWidget {
   const MedicineApp({super.key});
 
