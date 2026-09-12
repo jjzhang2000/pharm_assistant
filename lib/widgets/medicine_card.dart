@@ -87,6 +87,30 @@ class MedicineCard extends StatelessWidget {
                 ],
               ),
 
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () {
+                    storage.update(medicine.copyWith(
+                      isStarred: !medicine.isStarred,
+                      updatedAt: DateTime.now(),
+                    ));
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      medicine.isStarred ? Icons.star : Icons.star_border,
+                      size: 22,
+                      color: medicine.isStarred
+                          ? const Color(0xFFE53935)
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 8),
 
               Row(

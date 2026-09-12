@@ -139,6 +139,7 @@ class StorageService extends ChangeNotifier {
     final notifier = NotificationService();
     for (final medicine in _medicines) {
       notifier.scheduleStockAlert(medicine);
+      notifier.scheduleStarredShortage(medicine);
     }
   }
 
@@ -202,17 +203,31 @@ class StorageService extends ChangeNotifier {
     _medicines.add(medicine);
     await _save();
     notifyListeners();
-    NotificationService().scheduleStockAlert(medicine);
+    final notifier = NotificationService();
+    notifier.scheduleStockAlert(medicine);
+    notifier.scheduleStarredShortage(medicine);
+    if (medicine.isStarred && medicine.needsAlert) {
+      notifier.showStarredShortage(medicine);
+    }
   }
 
   /// 更新药品
   Future<void> update(Medicine medicine) async {
     final index = _medicines.indexWhere((m) => m.id == medicine.id);
     if (index != -1) {
+      final old = _medicines[index];
+      final wasShort = old.isStarred && old.needsAlert;
+      final isShort = medicine.isStarred && medicine.needsAlert;
       _medicines[index] = medicine;
       await _save();
       notifyListeners();
-      NotificationService().scheduleStockAlert(medicine);
+      final notifier = NotificationService();
+      notifier.scheduleStockAlert(medicine);
+      notifier.scheduleStarredShortage(medicine);
+      // 由「未短缺」转为「短缺」（如扣减库存、刚标记星标）时立即通知一次
+      if (isShort && !wasShort) {
+        notifier.showStarredShortage(medicine);
+      }
     }
   }
 

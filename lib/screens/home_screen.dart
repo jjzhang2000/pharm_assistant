@@ -568,15 +568,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 短缺药品页：按药箱分组显示剩余天数不足的药品
+  /// 短缺药品页：顶部聚合星标药品，其余按药箱分组显示
   Widget _buildShortagePage(StorageService storage) {
     final theme = Theme.of(context);
     final cards = <Widget>[];
 
+    // 星标卡片：聚合所有药箱的短缺星标药品
+    final starred = storage.medicines
+        .where((m) => m.needsAlert && m.isStarred)
+        .toList()
+      ..sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
+    if (starred.isNotEmpty) {
+      cards.add(_buildStarShortageCard(starred, theme));
+    }
+
     for (final box in storage.boxes) {
       final shortage = storage
           .medicinesForBox(box.id)
-          .where((m) => m.needsAlert)
+          .where((m) => m.needsAlert && !m.isStarred)
           .toList()
         ..sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
       if (shortage.isNotEmpty) {
@@ -652,30 +661,81 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final m in medicines)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            m.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${m.remainingDays.floor()} 天',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.error,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                for (final m in medicines) _buildShortageMedicineRow(m, theme),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 星标短缺药品卡片：聚合展示所有药箱的星标药品
+  Widget _buildStarShortageCard(
+      List<Medicine> medicines, ThemeData theme) {
+    final titleColor = theme.colorScheme.onSurface;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: const Color(0xFFF2C9C9),
+            child: Row(
+              children: [
+                const Icon(Icons.star, size: 18, color: Color(0xFFE53935)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '星标',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: titleColor,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final m in medicines) _buildShortageMedicineRow(m, theme),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 单个短缺药品条目：名称 + 剩余天数
+  Widget _buildShortageMedicineRow(Medicine m, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              m.name,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${m.remainingDays.floor()} 天',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.error,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

@@ -104,9 +104,9 @@ class MedicineDetailScreen extends StatelessWidget {
                           color: theme.colorScheme.onErrorContainer,
                         ),
                       Text(
-                        remainingDays == double.infinity
-                            ? '--'
-                            : remainingDays.floor().toString(),
+                        '${medicine.currentStock} ${medicine.form} / '
+                        '${remainingDays == double.infinity ? '--' : '${remainingDays.floor()} 天'}',
+                        textAlign: TextAlign.center,
                         style: theme.textTheme.displaySmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: isAlert
@@ -119,7 +119,7 @@ class MedicineDetailScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.calendar_today,
+                            Icons.inventory_2_outlined,
                             size: 14,
                             color: isAlert
                                 ? theme.colorScheme.onErrorContainer
@@ -129,7 +129,7 @@ class MedicineDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '剩余天数',
+                            '剩余存量 / 天数',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: isAlert
                                   ? theme.colorScheme.onErrorContainer

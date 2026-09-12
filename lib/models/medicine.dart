@@ -27,6 +27,8 @@ class Medicine {
   final List<DateTime> nextRoundDates;
   /// 所属药箱 ID（空串表示尚未归属，加载时归入默认药箱）
   final String boxId;
+  /// 星标状态（星标药品在短缺页优先显示）
+  final bool isStarred;
 
   Medicine({
     required this.id,
@@ -48,6 +50,7 @@ class Medicine {
     this.doseHour,
     this.nextRoundDates = const [],
     this.boxId = '',
+    this.isStarred = false,
   });
 
   /// 周期换算天数
@@ -375,6 +378,7 @@ class Medicine {
                   json['timesPerDay'] as int? ??
                   1),
       boxId: json['boxId'] as String? ?? '',
+      isStarred: json['isStarred'] as bool? ?? false,
     );
   }
 
@@ -383,6 +387,7 @@ class Medicine {
       'id': id,
       'name': name,
       'boxId': boxId,
+      'isStarred': isStarred,
       'dosageStrength': dosageStrength,
       'dosageStrengthUnit': dosageStrengthUnit,
       'form': form,
@@ -427,6 +432,7 @@ class Medicine {
     Object? doseHour = _sentinel,
     Object? nextRoundDates = _sentinel,
     String? boxId,
+    Object? isStarred = _sentinel,
   }) {
     return Medicine(
       id: id ?? this.id,
@@ -454,6 +460,7 @@ class Medicine {
           ? this.nextRoundDates
           : ((nextRoundDates as List<DateTime>?) ?? const <DateTime>[]),
       boxId: boxId ?? this.boxId,
+      isStarred: isStarred == _sentinel ? this.isStarred : isStarred as bool,
     );
   }
 }

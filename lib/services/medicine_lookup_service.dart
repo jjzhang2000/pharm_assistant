@@ -51,9 +51,6 @@ class MedicineLookupService {
   Future<DrugLookupResult> lookup(String keyword) async {
     final word = keyword.trim();
     if (word.isEmpty) throw Exception('请输入药品名称');
-    if (apiKey.isEmpty || apiKey == 'YOUR_API_KEY') {
-      throw Exception('请先在 medicine_lookup_service.dart 中配置天行数据 API Key');
-    }
 
     // 依次尝试：原始名称 → 去空白 → 去括号（商品名），命中即用
     final candidates = <String>{
@@ -103,9 +100,6 @@ class MedicineLookupService {
   Future<BarcodeInfo?> lookupByBarcode(String barcode) async {
     final code = barcode.trim();
     if (code.isEmpty) return null;
-    if (apiKey.isEmpty || apiKey == 'YOUR_API_KEY') {
-      throw Exception('请先在 medicine_lookup_service.dart 中配置天行数据 API Key');
-    }
 
     final uri = Uri.parse('https://apis.tianapi.com/barcode/index')
         .replace(queryParameters: {'key': apiKey, 'barcode': code});

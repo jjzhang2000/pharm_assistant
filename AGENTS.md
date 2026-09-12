@@ -11,6 +11,8 @@
 - 版本号以 `pubspec.yaml` 的 `version` 字段为唯一来源
 - 库存扣减以当天午夜为界计算
 - 低频药品（频次低于每天 1 次）使用「下次服用日期」驱动扣减
+- 星标药品在短缺负一页顶部聚合，星标短缺通知按「跌破警戒线时刻」用 `zonedSchedule` 预排期（后台可触发）；非星标短缺仅在启动/返回时即时检查
+- Android 13+ 通知需在 `NotificationService.init` 中运行时申请 `POST_NOTIFICATIONS` 权限
 
 ## 构建
 
