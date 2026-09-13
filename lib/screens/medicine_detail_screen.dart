@@ -267,6 +267,26 @@ class MedicineDetailScreen extends StatelessWidget {
                         child: const Text('+10'),
                       ),
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 3,
+                      child: FilledButton(
+                        onPressed: () {
+                          final updated = medicine.copyWith(
+                            currentStock: medicine.currentStock + 50,
+                            updatedAt: DateTime.now(),
+                            lastStockUpdate: DateTime.now(),
+                          );
+                          storage.update(updated);
+                        },
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          foregroundColor: theme.colorScheme.onPrimaryContainer,
+                        ),
+                        child: const Text('+50'),
+                      ),
+                    ),
                   ],
                 ),
               ],

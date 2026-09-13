@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,6 +24,12 @@ class _HomeScreenState extends State<HomeScreen> {
   double _dragDelta = 0;
   bool _draggingMedicine = false;
 
+  /// 快速增减库存后延迟重排的定时器；连续增减时重置
+  Timer? _resortTimer;
+
+  /// 各药箱当前展示顺序缓存（boxId -> 有序药品 id），冻结期内保持稳定
+  final Map<String, List<String>> _orderCache = {};
+
   @override
   void initState() {
     super.initState();
@@ -32,8 +40,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _resortTimer?.cancel();
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// 快速增减库存时回调：重置排序冻结窗口（3 秒）
+  void _onQuickAdjust() {
+    _resortTimer?.cancel();
+    _resortTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() {});
+    });
   }
 
   /// 检查并发送库存不足通知
@@ -409,14 +426,29 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// 剩余时间不足的药品优先显示；同组内均按剩余时间递增排序
-  List<Medicine> _sorted(List<Medicine> medicines) {
-    final list = [...medicines]
+  /// 剩余时间不足的药品优先显示；同组内均按剩余时间递增排序。
+  /// 快速增减库存后的冻结期内，复用缓存的顺序，避免卡片位置突变导致误点。
+  List<Medicine> _sortedForBox(String boxId, List<Medicine> medicines) {
+    final frozen = _resortTimer != null && _resortTimer!.isActive;
+    if (frozen) {
+      final order = _orderCache[boxId];
+      if (order != null) {
+        final byId = {for (final m in medicines) m.id: m};
+        return [
+          for (final id in order)
+            if (byId.containsKey(id)) byId[id]!,
+        ];
+      }
+    }
+    final sorted = [...medicines]
       ..sort((a, b) {
         if (a.needsAlert != b.needsAlert) return a.needsAlert ? -1 : 1;
         return a.remainingDays.compareTo(b.remainingDays);
       });
-    return list;
+    if (!frozen) {
+      _orderCache[boxId] = sorted.map((m) => m.id).toList();
+    }
+    return sorted;
   }
 
   @override
@@ -503,8 +535,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       return _buildShortagePage(storage);
                     }
                     final box = boxes[index - 1];
-                    final medicines =
-                        _sorted(storage.medicinesForBox(box.id));
+                    final medicines = _sortedForBox(
+                        box.id, storage.medicinesForBox(box.id));
 
                     if (medicines.isEmpty) {
                       return const EmptyState();
@@ -529,6 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: MedicineCard(
                               medicine: medicine,
                               onMovedToBox: _goToBox,
+                              onQuickAdjust: _onQuickAdjust,
                             ),
                           ),
                         );

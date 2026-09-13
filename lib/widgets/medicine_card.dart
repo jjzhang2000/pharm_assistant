@@ -5,15 +5,52 @@ import '../models/medicine.dart';
 import '../services/storage_service.dart';
 
 /// 药品卡片：展示名称/剂量/剩余天数，支持快速加减库存与长按拖动移动
-class MedicineCard extends StatelessWidget {
+class MedicineCard extends StatefulWidget {
   final Medicine medicine;
   final void Function(String boxId) onMovedToBox;
+  final VoidCallback onQuickAdjust;
 
   const MedicineCard({
     super.key,
     required this.medicine,
     required this.onMovedToBox,
+    required this.onQuickAdjust,
   });
+
+  @override
+  State<MedicineCard> createState() => _MedicineCardState();
+}
+
+class _MedicineCardState extends State<MedicineCard> {
+  Medicine get medicine => widget.medicine;
+
+  /// 本地展示的库存：点击后立即刷新，存储数据也已同步落盘
+  late double _stock;
+
+  @override
+  void initState() {
+    super.initState();
+    _stock = medicine.currentStock;
+  }
+
+  @override
+  void didUpdateWidget(covariant MedicineCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _stock = widget.medicine.currentStock;
+  }
+
+  void _adjust(int delta) {
+    final newStock = _stock + delta;
+    if (newStock < 0) return;
+    setState(() => _stock = newStock);
+    // 立即持久化（同步进入内存并为文件落盘排队），仅排序由首页延迟处理
+    context.read<StorageService>().update(medicine.copyWith(
+          currentStock: newStock,
+          updatedAt: DateTime.now(),
+          lastStockUpdate: DateTime.now(),
+        ));
+    widget.onQuickAdjust();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +73,7 @@ class MedicineCard extends StatelessWidget {
           final result = await Navigator.pushNamed(context, '/medicine/detail',
               arguments: medicine.id);
           if (result is String) {
-            onMovedToBox(result);
+            widget.onMovedToBox(result);
           }
         },
         child: Padding(
@@ -124,20 +161,11 @@ class MedicineCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   _QuickAdjustButton(
                     icon: Icons.remove,
-                    onTap: () {
-                      if (medicine.currentStock > 0) {
-                        final updated = medicine.copyWith(
-                          currentStock: medicine.currentStock - 1,
-                          updatedAt: DateTime.now(),
-                          lastStockUpdate: DateTime.now(),
-                        );
-                        storage.update(updated);
-                      }
-                    },
+                    onTap: () => _adjust(-1),
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${medicine.currentStock}',
+                    '$_stock',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -145,14 +173,7 @@ class MedicineCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   _QuickAdjustButton(
                     icon: Icons.add,
-                    onTap: () {
-                      final updated = medicine.copyWith(
-                        currentStock: medicine.currentStock + 1,
-                        updatedAt: DateTime.now(),
-                        lastStockUpdate: DateTime.now(),
-                      );
-                      storage.update(updated);
-                    },
+                    onTap: () => _adjust(1),
                   ),
                 ],
               ),
