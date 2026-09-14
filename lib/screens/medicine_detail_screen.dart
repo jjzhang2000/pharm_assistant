@@ -104,7 +104,7 @@ class MedicineDetailScreen extends StatelessWidget {
                           color: theme.colorScheme.onErrorContainer,
                         ),
                       Text(
-                        '${medicine.currentStock} ${medicine.form} / '
+                        '${Medicine.formatStock(medicine.currentStock)} ${medicine.form} / '
                         '${remainingDays == double.infinity ? '--' : '${remainingDays.floor()} 天'}',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.displaySmall?.copyWith(
@@ -193,7 +193,7 @@ class MedicineDetailScreen extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.shelves,
                   label: '当前存量',
-                  value: '${medicine.currentStock} ${medicine.form}',
+                  value: '${Medicine.formatStock(medicine.currentStock)} ${medicine.form}',
                 ),
                 _InfoRow(
                   icon: Icons.notifications_active_outlined,

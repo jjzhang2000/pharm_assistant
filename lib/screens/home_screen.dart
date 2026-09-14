@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../models/medicine.dart';
 import '../models/medicine_box.dart';
 import '../services/storage_service.dart';
-import '../services/notification_service.dart';
 import '../widgets/medicine_card.dart';
 import '../widgets/empty_state.dart';
 
@@ -31,14 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final Map<String, List<String>> _orderCache = {};
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkNotifications();
-    });
-  }
-
-  @override
   void dispose() {
     _resortTimer?.cancel();
     _pageController.dispose();
@@ -51,12 +42,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _resortTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) setState(() {});
     });
-  }
-
-  /// 检查并发送库存不足通知
-  void _checkNotifications() {
-    final storage = context.read<StorageService>();
-    NotificationService().checkAndNotify(storage.medicines);
   }
 
   /// 新建药箱并切换到新药箱页
@@ -200,7 +185,6 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 跳转到添加药品页，返回后刷新通知
   void _navigateToAdd(String boxId) async {
     await Navigator.pushNamed(context, '/medicine/add', arguments: boxId);
-    _checkNotifications();
   }
 
   /// 切换到指定药箱
@@ -750,7 +734,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 单个短缺药品条目：名称 + 剩余天数
+  /// 单个短缺药品条目：名称 + 剩余存量 / 剩余天数
   Widget _buildShortageMedicineRow(Medicine m, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
@@ -765,6 +749,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(width: 8),
           Text(
+            '${Medicine.formatStock(m.currentStock)} ${m.form} / '
             '${m.remainingDays.floor()} 天',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.error,

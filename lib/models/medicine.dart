@@ -40,7 +40,7 @@ class Medicine {
     required this.periodUnit,
     required this.timesPerPeriod,
     required this.dosagePerTime,
-    required this.currentStock,
+    required double currentStock,
     required this.alertThreshold,
     required this.createdAt,
     required this.updatedAt,
@@ -51,7 +51,18 @@ class Medicine {
     this.nextRoundDates = const [],
     this.boxId = '',
     this.isStarred = false,
-  });
+  }) : currentStock = _roundStock(currentStock);
+
+  /// 库存统一舍入到 2 位小数，避免浮点运算产生 4.050000000000001 之类误差
+  static double _roundStock(double value) => (value * 100).roundToDouble() / 100;
+
+  /// 库存展示文本：整数省略小数点与末尾 0，非整数保留至多 2 位小数
+  static String formatStock(double value) {
+    if (value == value.roundToDouble()) return value.round().toString();
+    var s = value.toStringAsFixed(2);
+    if (s.endsWith('0')) s = s.substring(0, s.length - 1);
+    return s;
+  }
 
   /// 周期换算天数
   static int periodToDays(String unit, int value) {

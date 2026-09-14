@@ -49,37 +49,6 @@ class NotificationService {
     }
   }
 
-  /// 检查并立即发送库存不足通知（仅限非星标药品；星标药品走专门的短缺通知机制）
-  Future<void> checkAndNotify(List<Medicine> medicines) async {
-    if (!_initialized) return;
-
-    for (final medicine in medicines) {
-      // 星标药品由 scheduleStarredShortage 预排期，或转入短缺时即时通知，此处跳过以免重复
-      if (medicine.needsAlert && !medicine.isStarred) {
-        try {
-          final remainingDays = medicine.remainingDays.floor();
-          await _plugin.show(
-            medicine.id.hashCode,
-            '药品即将用完',
-            '${medicine.name} 仅剩约 $remainingDays 天用量，请及时补充',
-            const NotificationDetails(
-              android: AndroidNotificationDetails(
-                'medicine_alert',
-                '药品提醒',
-                channelDescription: '药品库存不足提醒',
-                importance: Importance.high,
-                priority: Priority.high,
-              ),
-              iOS: DarwinNotificationDetails(),
-            ),
-          );
-        } catch (e) {
-          debugPrint('发送通知失败: $e');
-        }
-      }
-    }
-  }
-
   /// 发送星标药品短缺通知（由 StorageService 在药品转入「星标+短缺」时调用一次）
   Future<void> showStarredShortage(Medicine medicine) async {
     if (!_initialized) return;
@@ -123,14 +92,14 @@ class NotificationService {
     final remainingDays = medicine.remainingDays;
     if (remainingDays == double.infinity) return;
 
-    final daysToThreshold =
-        (remainingDays - medicine.alertThreshold).floor();
+    final daysToThreshold = remainingDays - medicine.alertThreshold;
     if (daysToThreshold < 0) return;
 
-    // 以午夜为界：在下个午夜 + 距跌破警戒线的整日数时触发
+    // 在剩余天数跌破警戒线的真实时刻触发（按剩余天差换算为绝对时间），
+    // 避免以「下个午夜 + 整日数」计算导致通知滞后近一天。
     final now = DateTime.now();
-    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
-    final thresholdDate = nextMidnight.add(Duration(days: daysToThreshold));
+    final thresholdDate = now.add(Duration(
+        milliseconds: (daysToThreshold * Duration.millisecondsPerDay).round()));
     final thresholdTz = tz.TZDateTime.from(thresholdDate, tz.local);
 
     try {
