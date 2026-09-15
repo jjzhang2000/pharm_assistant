@@ -79,15 +79,25 @@ class NotificationService {
 
   /// 为星标药品预约定时通知：在剩余天数跌破警戒线的未来时刻触发，
   /// 即使 App 未运行也会由系统闹钟在后台弹出。
-  Future<void> scheduleStarredShortage(Medicine medicine) async {
+  ///
+  /// [notifyIfShort]：当前已短缺时是否补发即时通知。启动检查时传 true，
+  /// 作为「后台排期被取消/未送达」的兜底，避免用户打开 App 仍然收不到。
+  Future<void> scheduleStarredShortage(Medicine medicine,
+      {bool notifyIfShort = false}) async {
     if (!_initialized) return;
     final id = _starId(medicine.id);
     try {
       await _plugin.cancel(id);
     } catch (_) {}
 
-    // 非星标、或当前已短缺（交给即时通知）时不排期
-    if (!medicine.isStarred || medicine.needsAlert) return;
+    // 非星标药品不做短缺通知
+    if (!medicine.isStarred) return;
+
+    // 当前已跌破警戒线：不再预排期，按需补发即时通知
+    if (medicine.needsAlert) {
+      if (notifyIfShort) await showStarredShortage(medicine);
+      return;
+    }
 
     final remainingDays = medicine.remainingDays;
     if (remainingDays == double.infinity) return;
@@ -100,7 +110,9 @@ class NotificationService {
     final now = DateTime.now();
     final thresholdDate = now.add(Duration(
         milliseconds: (daysToThreshold * Duration.millisecondsPerDay).round()));
-    final thresholdTz = tz.TZDateTime.from(thresholdDate, tz.local);
+    // 显式按 UTC 绝对时间转换，避免 tz.local 未设置时把本地壁钟时间
+    // 误当 UTC 而导致通知偏移一个时区（如北京时间晚 8 小时）。
+    final thresholdTz = tz.TZDateTime.from(thresholdDate.toUtc(), tz.UTC);
 
     try {
       await _plugin.zonedSchedule(
@@ -166,7 +178,7 @@ class NotificationService {
       final now = DateTime.now();
       final nextMidnight = DateTime(now.year, now.month, now.day + 1);
       final depletionDate = nextMidnight.add(Duration(days: remainingDays.floor()));
-      final depletionTz = tz.TZDateTime.from(depletionDate, tz.local);
+      final depletionTz = tz.TZDateTime.from(depletionDate.toUtc(), tz.UTC);
 
       await _plugin.zonedSchedule(
         id,

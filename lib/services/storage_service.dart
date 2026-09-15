@@ -139,7 +139,7 @@ class StorageService extends ChangeNotifier {
     final notifier = NotificationService();
     for (final medicine in _medicines) {
       notifier.scheduleStockAlert(medicine);
-      notifier.scheduleStarredShortage(medicine);
+      notifier.scheduleStarredShortage(medicine, notifyIfShort: true);
     }
   }
 
