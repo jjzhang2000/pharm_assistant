@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
+import 'package:gal/gal.dart';
 import 'package:provider/provider.dart';
 
 import '../models/medicine.dart';
@@ -22,6 +25,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 1;
   double _dragDelta = 0;
   bool _draggingMedicine = false;
+
+  /// 短缺药品页整页长截图的边界标识
+  final GlobalKey _shortageKey = GlobalKey();
 
   /// 快速增减库存后延迟重排的定时器；连续增减时重置
   Timer? _resortTimer;
@@ -480,7 +486,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 foregroundColor: theme.colorScheme.onSurface,
                 title: Text(onShortagePage ? '短缺药品' : currentBox.name),
                 actions: [
-                  if (!onShortagePage)
+                  if (onShortagePage)
+                    IconButton(
+                      tooltip: '分享短缺药品',
+                      icon: const Icon(Icons.share_outlined),
+                      onPressed: _shareShortage,
+                    )
+                  else
                     PopupMenuButton<_BoxAction>(
                       tooltip: '更多',
                       icon: const Icon(Icons.more_horiz),
@@ -585,6 +597,45 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// 生成短缺药品整页长截图并保存到相册，随后弹出分享提示
+  Future<void> _shareShortage() async {
+    final boundary = _shortageKey.currentContext?.findRenderObject()
+        as RenderRepaintBoundary?;
+    if (boundary == null || !mounted) return;
+
+    final pixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    if (byteData == null || !mounted) return;
+    final bytes = byteData.buffer.asUint8List();
+
+    try {
+      await Gal.putImageBytes(bytes);
+    } on GalException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('保存到相册失败，请检查相册权限后重试')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('已保存到相册'),
+        content: const Text('短缺药品页面长截图已保存到手机相册，可在微信、QQ 等应用中分享给好友。'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 短缺药品页：顶部聚合星标药品，其余按药箱分组显示
   Widget _buildShortagePage(StorageService storage) {
     final theme = Theme.of(context);
@@ -611,30 +662,46 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (cards.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 64,
-              color: theme.colorScheme.primary.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '暂无短缺药品',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+      return RepaintBoundary(
+        key: _shortageKey,
+        child: Container(
+          color: theme.scaffoldBackgroundColor,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                size: 64,
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                '暂无短缺药品',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: cards,
+    // 用 SingleChildScrollView + Column 渲染全部内容（非懒加载），
+    // 使整页长截图能一次性捕获完整滚动区域。
+    return SingleChildScrollView(
+      child: RepaintBoundary(
+        key: _shortageKey,
+        child: Container(
+          color: theme.scaffoldBackgroundColor,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: cards,
+          ),
+        ),
+      ),
     );
   }
 
