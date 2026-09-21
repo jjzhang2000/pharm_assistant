@@ -22,6 +22,17 @@ class StorageService extends ChangeNotifier {
   List<Medicine> medicinesForBox(String boxId) =>
       _medicines.where((m) => m.boxId == boxId).toList();
 
+  /// 按 ID 查找药箱
+  MedicineBox? boxById(String id) {
+    for (final b in _boxes) {
+      if (b.id == id) return b;
+    }
+    return null;
+  }
+
+  /// 指定药箱是否为备用药箱
+  bool isBackupBox(String boxId) => boxById(boxId)?.isBackup ?? false;
+
   bool get initialized => _initialized;
 
   /// 获取 JSON 文件路径
@@ -69,12 +80,42 @@ class StorageService extends ChangeNotifier {
       ));
       migrated = true;
     }
+
+    // 确保存在备用药箱（只记录存量、不自动扣减、不参与短缺统计）
+    if (!_boxes.any((b) => b.isBackup)) {
+      _boxes.add(MedicineBox(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: '备用药箱',
+        createdAt: DateTime.now(),
+        color: MedicineBox.backupColor,
+        isBackup: true,
+      ));
+      migrated = true;
+    }
+
+    // 备用药箱永远排在最末（其余普通药箱保持原有顺序）
+    final reordered = [
+      ..._boxes.where((b) => !b.isBackup),
+      ..._boxes.where((b) => b.isBackup),
+    ];
+    final orderChanged = reordered.length != _boxes.length ||
+        _boxes.asMap().entries.any((e) => e.value.id != reordered[e.key].id);
+    _boxes = reordered;
+    if (orderChanged) migrated = true;
+
     final defaultBoxId = _boxes.first.id;
 
-    // 为未分配或颜色重复的药箱分配颜色
+    // 为未分配或颜色重复的药箱分配颜色；备用药箱固定使用专用底色
     final usedColors = <int>{};
     for (int i = 0; i < _boxes.length; i++) {
       final b = _boxes[i];
+      if (b.isBackup) {
+        if (b.color != MedicineBox.backupColor) {
+          _boxes[i] = b.copyWith(color: MedicineBox.backupColor);
+          migrated = true;
+        }
+        continue;
+      }
       if (b.color == 0 || usedColors.contains(b.color)) {
         final c = MedicineBox.nextColor(usedColors);
         _boxes[i] = b.copyWith(color: c);
@@ -110,6 +151,8 @@ class StorageService extends ChangeNotifier {
     final now = DateTime.now();
     for (int i = 0; i < _medicines.length; i++) {
       final m = _medicines[i];
+      // 备用药箱中的药品只记录存量，不参与自动扣减
+      if (isBackupBox(m.boxId)) continue;
       final adjusted = m.adjustedStock;
       if (adjusted < m.currentStock) {
         debugPrint(
@@ -138,6 +181,7 @@ class StorageService extends ChangeNotifier {
   void scheduleAllAlerts() {
     final notifier = NotificationService();
     for (final medicine in _medicines) {
+      if (isBackupBox(medicine.boxId)) continue;
       notifier.scheduleStockAlert(medicine);
       notifier.scheduleStarredShortage(medicine, notifyIfShort: true);
     }
@@ -157,17 +201,24 @@ class StorageService extends ChangeNotifier {
     }
   }
 
-  /// 新增药箱
-  Future<void> addBox(String name) async {
+  /// 新增药箱（返回新建的药箱；新药箱始终插入到备用药箱之前）
+  Future<MedicineBox> addBox(String name) async {
     final usedColors = _boxes.map((b) => b.color).toSet();
-    _boxes.add(MedicineBox(
+    final box = MedicineBox(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       createdAt: DateTime.now(),
       color: MedicineBox.nextColor(usedColors),
-    ));
+    );
+    final backupIndex = _boxes.indexWhere((b) => b.isBackup);
+    if (backupIndex >= 0) {
+      _boxes.insert(backupIndex, box);
+    } else {
+      _boxes.add(box);
+    }
     await _save();
     notifyListeners();
+    return box;
   }
 
   /// 重命名药箱
@@ -203,6 +254,7 @@ class StorageService extends ChangeNotifier {
     _medicines.add(medicine);
     await _save();
     notifyListeners();
+    if (isBackupBox(medicine.boxId)) return;
     final notifier = NotificationService();
     notifier.scheduleStockAlert(medicine);
     notifier.scheduleStarredShortage(medicine);
@@ -221,6 +273,7 @@ class StorageService extends ChangeNotifier {
       _medicines[index] = medicine;
       await _save();
       notifyListeners();
+      if (isBackupBox(medicine.boxId)) return;
       final notifier = NotificationService();
       notifier.scheduleStockAlert(medicine);
       notifier.scheduleStarredShortage(medicine);

@@ -12,6 +12,9 @@ class MedicineBox {
     0xFFC6D4E1, // 水粉灰蓝
   ];
 
+  /// 备用药箱的专用底色（中性灰，与普通药箱的水粉调色板区分）
+  static const int backupColor = 0xFFE0E0E0;
+
   /// 唯一标识（时间戳字符串）
   final String id;
   /// 药箱名，显示在 AppBar
@@ -20,12 +23,15 @@ class MedicineBox {
   final DateTime createdAt;
   /// 药箱底色（ARGB，0 表示尚未分配）
   final int color;
+  /// 是否为备用药箱：只记录存量、不自动扣减、不参与短缺统计，永远排在最后
+  final bool isBackup;
 
   MedicineBox({
     required this.id,
     required this.name,
     required this.createdAt,
     this.color = 0,
+    this.isBackup = false,
   });
 
   /// 返回一个未被 [usedColors] 占用的颜色，全部用完后循环回第一个
@@ -42,6 +48,7 @@ class MedicineBox {
       name: json['name'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       color: json['color'] as int? ?? 0,
+      isBackup: json['isBackup'] as bool? ?? false,
     );
   }
 
@@ -51,15 +58,17 @@ class MedicineBox {
       'name': name,
       'createdAt': createdAt.toIso8601String(),
       'color': color,
+      'isBackup': isBackup,
     };
   }
 
-  MedicineBox copyWith({int? color}) {
+  MedicineBox copyWith({int? color, bool? isBackup}) {
     return MedicineBox(
       id: id,
       name: name,
       createdAt: createdAt,
       color: color ?? this.color,
+      isBackup: isBackup ?? this.isBackup,
     );
   }
 }

@@ -56,8 +56,9 @@ class _MedicineCardState extends State<MedicineCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final storage = context.read<StorageService>();
+    final isBackup = storage.isBackupBox(medicine.boxId);
     final remainingDays = medicine.remainingDays;
-    final isAlert = medicine.needsAlert;
+    final isAlert = !isBackup && medicine.needsAlert;
 
     return Card(
       elevation: isAlert ? 3 : 1,
@@ -92,60 +93,73 @@ class _MedicineCardState extends State<MedicineCard> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: isAlert
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    remainingDays == double.infinity
-                        ? '--'
-                        : '${remainingDays.floor()} 天',
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                  if (!isBackup) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
                       color: isAlert
                           ? theme.colorScheme.error
-                          : theme.colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
-                  ),
-                  if (isAlert)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Icon(
-                        Icons.warning_amber_rounded,
-                        size: 20,
-                        color: theme.colorScheme.error,
+                    const SizedBox(width: 4),
+                    Text(
+                      remainingDays == double.infinity
+                          ? '--'
+                          : '${remainingDays.floor()} 天',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isAlert
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (isAlert)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          size: 20,
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                  ],
                 ],
               ),
 
               const SizedBox(height: 4),
               Row(
                 children: [
-                  InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      storage.update(medicine.copyWith(
-                        isStarred: !medicine.isStarred,
-                        updatedAt: DateTime.now(),
-                      ));
-                    },
-                    child: Padding(
+                  if (isBackup)
+                    Padding(
                       padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        medicine.isStarred ? Icons.star : Icons.star_border,
-                        size: 22,
-                        color: medicine.isStarred
-                            ? const Color(0xFFE53935)
-                            : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      child: Text(
+                        '备用',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    )
+                  else
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        storage.update(medicine.copyWith(
+                          isStarred: !medicine.isStarred,
+                          updatedAt: DateTime.now(),
+                        ));
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          medicine.isStarred ? Icons.star : Icons.star_border,
+                          size: 22,
+                          color: medicine.isStarred
+                              ? const Color(0xFFE53935)
+                              : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
                       ),
                     ),
-                  ),
                   const Spacer(),
                   Icon(
                     Icons.shelves,

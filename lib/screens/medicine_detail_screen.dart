@@ -25,8 +25,9 @@ class MedicineDetailScreen extends StatelessWidget {
           );
         }
 
+        final isBackup = storage.isBackupBox(medicine.boxId);
         final remainingDays = medicine.remainingDays;
-        final isAlert = medicine.needsAlert;
+        final isAlert = !isBackup && medicine.needsAlert;
 
         return Scaffold(
           appBar: AppBar(
@@ -85,64 +86,106 @@ class MedicineDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 剩余天数卡片
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: isAlert
-                        ? theme.colorScheme.errorContainer
-                        : theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      if (isAlert)
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 32,
-                          color: theme.colorScheme.onErrorContainer,
+                // 顶部卡片：备用药箱只显示存量，普通药品显示剩余存量 / 天数
+                if (isBackup)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '${Medicine.formatStock(medicine.currentStock)} ${medicine.form}',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
                         ),
-                      Text(
-                        '${Medicine.formatStock(medicine.currentStock)} ${medicine.form} / '
-                        '${remainingDays == double.infinity ? '--' : '${remainingDays.floor()} 天'}',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isAlert
-                              ? theme.colorScheme.onErrorContainer
-                              : theme.colorScheme.onPrimaryContainer,
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.inventory_2_outlined,
+                              size: 14,
+                              color: theme.colorScheme.onPrimaryContainer
+                                  .withValues(alpha: 0.8),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '当前存量',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onPrimaryContainer
+                                    .withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isAlert
+                          ? theme.colorScheme.errorContainer
+                          : theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        if (isAlert)
                           Icon(
-                            Icons.inventory_2_outlined,
-                            size: 14,
+                            Icons.warning_amber_rounded,
+                            size: 32,
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        Text(
+                          '${Medicine.formatStock(medicine.currentStock)} ${medicine.form} / '
+                          '${remainingDays == double.infinity ? '--' : '${remainingDays.floor()} 天'}',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
                             color: isAlert
                                 ? theme.colorScheme.onErrorContainer
-                                    .withValues(alpha: 0.8)
-                                : theme.colorScheme.onPrimaryContainer
-                                    .withValues(alpha: 0.8),
+                                : theme.colorScheme.onPrimaryContainer,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '剩余存量 / 天数',
-                            style: theme.textTheme.bodyMedium?.copyWith(
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.inventory_2_outlined,
+                              size: 14,
                               color: isAlert
                                   ? theme.colorScheme.onErrorContainer
                                       .withValues(alpha: 0.8)
                                   : theme.colorScheme.onPrimaryContainer
                                       .withValues(alpha: 0.8),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            const SizedBox(width: 4),
+                            Text(
+                              '剩余存量 / 天数',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: isAlert
+                                    ? theme.colorScheme.onErrorContainer
+                                        .withValues(alpha: 0.8)
+                                    : theme.colorScheme.onPrimaryContainer
+                                        .withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
                 const SizedBox(height: 24),
 
@@ -155,35 +198,36 @@ class MedicineDetailScreen extends StatelessWidget {
                   value: '${medicine.dosageStrength.toInt()} ${medicine.dosageStrengthUnit} / ${medicine.form}',
                 ),
 
-                const SizedBox(height: 24),
-
-                // 服用方式
-                const _SectionHeader(icon: Icons.repeat, label: '服用方式'),
-                const SizedBox(height: 8),
-                _InfoRow(
-                  icon: Icons.schedule,
-                  label: '频次',
-                  value: '每 ${medicine.periodValue} ${medicine.periodUnit} ${medicine.timesPerPeriod} 次',
-                ),
-                _InfoRow(
-                  icon: Icons.scale,
-                  label: '每次剂量',
-                  value: '${medicine.dosagePerTime} ${medicine.form}',
-                ),
-                if (medicine.hasSchedule)
+                // 服用方式：备用药箱不服用，不展示
+                if (!isBackup) ...[
+                  const SizedBox(height: 24),
+                  const _SectionHeader(icon: Icons.repeat, label: '服用方式'),
+                  const SizedBox(height: 8),
                   _InfoRow(
-                    icon: Icons.access_time,
-                    label: '服用安排',
-                    value: _scheduleSummary(medicine),
+                    icon: Icons.schedule,
+                    label: '频次',
+                    value: '每 ${medicine.periodValue} ${medicine.periodUnit} ${medicine.timesPerPeriod} 次',
                   ),
-                if (medicine.isInfrequent || medicine.hasSchedule)
                   _InfoRow(
-                    icon: Icons.event,
-                    label: '下次服用日期',
-                    value: medicine.adjustedNextDoseDate != null
-                        ? '${medicine.adjustedNextDoseDate!.year}/${medicine.adjustedNextDoseDate!.month}/${medicine.adjustedNextDoseDate!.day}'
-                        : '未设置',
+                    icon: Icons.scale,
+                    label: '每次剂量',
+                    value: '${medicine.dosagePerTime} ${medicine.form}',
                   ),
+                  if (medicine.hasSchedule)
+                    _InfoRow(
+                      icon: Icons.access_time,
+                      label: '服用安排',
+                      value: _scheduleSummary(medicine),
+                    ),
+                  if (medicine.isInfrequent || medicine.hasSchedule)
+                    _InfoRow(
+                      icon: Icons.event,
+                      label: '下次服用日期',
+                      value: medicine.adjustedNextDoseDate != null
+                          ? '${medicine.adjustedNextDoseDate!.year}/${medicine.adjustedNextDoseDate!.month}/${medicine.adjustedNextDoseDate!.day}'
+                          : '未设置',
+                    ),
+                ],
 
                 const SizedBox(height: 24),
 
@@ -195,11 +239,12 @@ class MedicineDetailScreen extends StatelessWidget {
                   label: '当前存量',
                   value: '${Medicine.formatStock(medicine.currentStock)} ${medicine.form}',
                 ),
-                _InfoRow(
-                  icon: Icons.notifications_active_outlined,
-                  label: '提醒阈值',
-                  value: '低于 ${medicine.alertThreshold} 天提醒',
-                ),
+                if (!isBackup)
+                  _InfoRow(
+                    icon: Icons.notifications_active_outlined,
+                    label: '提醒阈值',
+                    value: '低于 ${medicine.alertThreshold} 天提醒',
+                  ),
 
                 const SizedBox(height: 24),
 
@@ -365,8 +410,8 @@ class MedicineDetailScreen extends StatelessWidget {
     if (target.isNew) {
       final name = await _showNewBoxNameDialog(context);
       if (name == null || !context.mounted) return;
-      await storage.addBox(name);
-      targetBoxId = storage.boxes.last.id;
+      final newBox = await storage.addBox(name);
+      targetBoxId = newBox.id;
     } else {
       targetBoxId = target.boxId;
     }

@@ -57,10 +57,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     final storage = context.read<StorageService>();
-    await storage.addBox(name);
+    final box = await storage.addBox(name);
 
     if (!mounted) return;
-    final newIndex = storage.boxes.length;
+    final newIndex = storage.boxes.indexWhere((b) => b.id == box.id) + 1;
     // 等待新页面挂载后再跳转
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _pageController.hasClients) {
@@ -354,10 +354,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _moveMedicineToNewBox(Medicine medicine) async {
     final storage = context.read<StorageService>();
     final name = _uniqueBoxName(storage);
-    await storage.addBox(name);
-    final newBoxId = storage.boxes.last.id;
+    final box = await storage.addBox(name);
     await storage.update(
-        medicine.copyWith(boxId: newBoxId, updatedAt: DateTime.now()));
+        medicine.copyWith(boxId: box.id, updatedAt: DateTime.now()));
   }
 
   /// 生成不重名的药箱名：新药箱、新药箱2、新药箱3……
@@ -419,6 +418,10 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 剩余时间不足的药品优先显示；同组内均按剩余时间递增排序。
   /// 快速增减库存后的冻结期内，复用缓存的顺序，避免卡片位置突变导致误点。
   List<Medicine> _sortedForBox(String boxId, List<Medicine> medicines) {
+    // 备用药箱只记录存量，不按剩余天数/短缺排序，保持添加顺序
+    if (context.read<StorageService>().isBackupBox(boxId)) {
+      return List.of(medicines);
+    }
     final frozen = _resortTimer != null && _resortTimer!.isActive;
     if (frozen) {
       final order = _orderCache[boxId];
@@ -502,15 +505,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           value: _BoxAction.newBox,
                           child: Text('新药箱'),
                         ),
-                        const PopupMenuItem(
-                          value: _BoxAction.rename,
-                          child: Text('重命名'),
-                        ),
-                        PopupMenuItem(
-                          value: _BoxAction.delete,
-                          enabled: boxes.length > 1,
-                          child: const Text('删除'),
-                        ),
+                        if (!currentBox.isBackup) ...[
+                          const PopupMenuItem(
+                            value: _BoxAction.rename,
+                            child: Text('重命名'),
+                          ),
+                          PopupMenuItem(
+                            value: _BoxAction.delete,
+                            enabled: boxes.length > 1,
+                            child: const Text('删除'),
+                          ),
+                        ],
                       ],
                     ),
                 ],
@@ -641,9 +646,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final cards = <Widget>[];
 
-    // 星标卡片：聚合所有药箱的短缺星标药品
+    // 星标卡片：聚合所有药箱的短缺星标药品（备用药箱不参与短缺统计）
     final starred = storage.medicines
-        .where((m) => m.needsAlert && m.isStarred)
+        .where((m) =>
+            m.needsAlert &&
+            m.isStarred &&
+            !storage.isBackupBox(m.boxId))
         .toList()
       ..sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
     if (starred.isNotEmpty) {
@@ -651,6 +659,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     for (final box in storage.boxes) {
+      if (box.isBackup) continue;
       final shortage = storage
           .medicinesForBox(box.id)
           .where((m) => m.needsAlert && !m.isStarred)
