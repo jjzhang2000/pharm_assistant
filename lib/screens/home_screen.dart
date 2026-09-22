@@ -21,8 +21,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final PageController _pageController = PageController(initialPage: 1);
-  int _currentIndex = 1;
+  final PageController _pageController = PageController(initialPage: 0);
+  int _currentIndex = 0;
   double _dragDelta = 0;
   bool _draggingMedicine = false;
 
@@ -42,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  /// 快速增减库存时回调：重置排序冻结窗口（3 秒）
+  /// 快速增减库存或切换星标时回调：重置排序冻结窗口（3 秒）
   void _onQuickAdjust() {
     _resortTimer?.cancel();
     _resortTimer = Timer(const Duration(seconds: 3), () {
@@ -415,8 +415,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// 剩余时间不足的药品优先显示；同组内均按剩余时间递增排序。
-  /// 快速增减库存后的冻结期内，复用缓存的顺序，避免卡片位置突变导致误点。
+  /// 星标药品优先显示；星标与非星标各自按剩余天数递增排序。
+  /// 快速增减库存或切换星标后的冻结期内，复用缓存的顺序，避免卡片位置突变导致误点。
   List<Medicine> _sortedForBox(String boxId, List<Medicine> medicines) {
     // 备用药箱只记录存量，不按剩余天数/短缺排序，保持添加顺序
     if (context.read<StorageService>().isBackupBox(boxId)) {
@@ -435,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     final sorted = [...medicines]
       ..sort((a, b) {
-        if (a.needsAlert != b.needsAlert) return a.needsAlert ? -1 : 1;
+        if (a.isStarred != b.isStarred) return a.isStarred ? -1 : 1;
         return a.remainingDays.compareTo(b.remainingDays);
       });
     if (!frozen) {

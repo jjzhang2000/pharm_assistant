@@ -148,6 +148,8 @@ class _MedicineCardState extends State<MedicineCard> {
                           isStarred: !medicine.isStarred,
                           updatedAt: DateTime.now(),
                         ));
+                        // 切换星标后延迟重排，避免卡片位置立即突变
+                        widget.onQuickAdjust();
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(8),

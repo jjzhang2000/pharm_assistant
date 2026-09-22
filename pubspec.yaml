@@ -1,7 +1,7 @@
 name: pharm_assistant
 description: 小药箱 - 日常药品库存管理
 publish_to: 'none'
-version: 0.5.0+1
+version: 0.5.1+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
