@@ -489,13 +489,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 foregroundColor: theme.colorScheme.onSurface,
                 title: Text(onShortagePage ? '短缺药品' : currentBox.name),
                 actions: [
-                  if (onShortagePage)
+                  if (onShortagePage) ...[
                     IconButton(
                       tooltip: '分享短缺药品',
                       icon: const Icon(Icons.share_outlined),
                       onPressed: _shareShortage,
-                    )
-                  else
+                    ),
+                    IconButton(
+                      tooltip: '关于',
+                      icon: const Icon(Icons.info_outline),
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/about'),
+                    ),
+                  ] else
                     PopupMenuButton<_BoxAction>(
                       tooltip: '更多',
                       icon: const Icon(Icons.more_horiz),
