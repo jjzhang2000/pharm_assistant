@@ -1,95 +1,52 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 /// 关于页：展示应用名称、版本号、版权声明；页面下半部滚动展示版本更新记录
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
   /// 应用名称
   static const String appName = '小药箱';
 
-  /// 版本号：与 pubspec.yaml 的 version 字段保持一致
-  static const String appVersion = '0.5.2';
-
   /// 版权声明
   static const String copyright = '© 2026 小药箱 · 保留所有权利';
 
-  /// 版本更新记录（与 README.md「版本更新记录」章节保持一致，按版本从新到旧）
-  static const List<_VersionEntry> _changelog = [
-    _VersionEntry('0.5.2', [
-      '负一页 AppBar 右侧新增「关于」按钮，进入关于页',
-      '关于页展示应用名称、版本号、版权声明，并在下半部滚动展示版本更新记录',
-    ]),
-    _VersionEntry('0.5.1', [
-      '短缺药品负一页设为默认首页，App 每次启动自动显示',
-      '药箱页药品排序调整：星标药品置于非星标药品之前，各自按剩余天数递增排序',
-      '切换星标后延迟 3 秒再重新排序，避免卡片位置突变导致误点（与快速增减库存一致）',
-    ]),
-    _VersionEntry('0.5.0', [
-      '新增固定「备用药箱」：永远排在其他药箱最末（最右屏），不可重命名/删除',
-      '备用药箱中的药品只记录存量，不自动扣减、不显示剩余存量/天数、不参与短缺统计与通知',
-      '备用药箱卡片与详情页相应精简，快速加减库存仍可用',
-    ]),
-    _VersionEntry('0.4.5', [
-      '短缺药品负一页 AppBar 右侧新增「分享」图标：一键生成整页长截图并保存到系统相册',
-      '集成 gal 插件用于保存图片到相册（已完成 Android/iOS 相册权限适配）',
-      'Android compileSdk 由 35 升级到 36',
-    ]),
-    _VersionEntry('0.4.4', [
-      '修复星标药品短缺通知漏发：打开 App 时已触及警戒线的星标药品会补发即时通知',
-      '修复后台预排期通知时区偏移问题',
-    ]),
-    _VersionEntry('0.4.3', [
-      '修复星标药品短缺通知不及时的问题：预排期触发时刻由「下个午夜 + 整日数」改为按剩余天数差换算的精确时刻',
-      '非星标药品短缺时不再发送通知',
-      '库存数值持久化统一舍入到 2 位小数，消除浮点误差',
-      '库存显示为整数时省略小数点与末尾 0',
-      '药箱卡片星标与快速增减 -/+ 合并为同一行，压缩卡片高度',
-      '短缺负一页药品条目由「剩余天数」改为「剩余存量 / 剩余天数」',
-    ]),
-    _VersionEntry('0.4.2', [
-      '药箱卡片快速增减库存时，库存立即持久化，卡片列表重新排序延迟 3 秒；连续增减重置等待时间',
-    ]),
-    _VersionEntry('0.4.1', [
-      '药品详情页「快速调整库存」区新增 +50 按钮，点击一次增加 50 单位库存',
-    ]),
-    _VersionEntry('0.4.0', [
-      '药品新增「星标」属性',
-      '短缺负一页顶部新增星标聚合卡片，星标药品优先展示',
-      '详情页头部大框改为显示「剩余存量 / 天数」',
-      '星标药品短缺通知改为按「跌破警戒线时刻」预排期（zonedSchedule），App 未运行时也能推送',
-      '修复 Android 13+ 未运行时申请通知权限导致收不到通知的问题',
-    ]),
-    _VersionEntry('0.3.0', [
-      '详情页 AppBar 右侧删除按钮改为「更多」菜单（移动 / 删除）',
-      '长按药品卡片进入全屏药箱概览，拖动到其他药箱或「新药箱」完成移动',
-      '移动成功后首页自动跳转到目标药箱',
-    ]),
-    _VersionEntry('0.2.2', [
-      '药箱页底部指示点随安卓系统导航栏显示/隐藏动态调整位置',
-    ]),
-    _VersionEntry('0.2.1', [
-      '药箱自动分配柔和的水粉/水彩底色，显示在药箱页标题栏与短缺页卡片标题行',
-    ]),
-    _VersionEntry('0.2.0', [
-      '新增「短缺药品」负一页，按药箱分组展示剩余天数不足的药品',
-      '清理冗余代码与注释',
-    ]),
-    _VersionEntry('0.1.0', [
-      '新增多药箱功能：左右滑动切换、新建药箱、按药箱归类药品',
-      '药箱支持重命名与删除',
-      '药品联网查询与扫码录入（天行数据接口 + mobile_scanner）',
-      '服用时间安排（每天固定时段 / 每周 / 每月）与库存精确扣减',
-      '低频药品下次服用日期与按天提醒',
-      '首页药品列表按剩余时间排序',
-      '修复整片场景剩余天数少算一天、快速调整库存未重置扣减基准等问题',
-    ]),
-    _VersionEntry('0.0.0', [
-      '初始版本：药品库存管理，三组表单界面、库存预警、Windows 桌面支持',
-      '根据服药周期自动扣减库存并预定定时通知',
-      '应用名定为「小药箱」',
-      '详情页 +7 快速加库存按钮',
-    ]),
-  ];
+  @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> {
+  /// 运行时从 pubspec.yaml（经 package_info_plus）读取的版本号
+  String _version = '';
+
+  /// 从 assets/changelog.json 读取的版本更新记录（按版本从新到旧）
+  List<_VersionEntry> _changelog = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final raw = await rootBundle.loadString('assets/changelog.json');
+      final entries = (jsonDecode(raw) as List)
+          .map((e) => _VersionEntry.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _version = info.version;
+        _changelog = entries;
+      });
+    } catch (_) {
+      // 读取失败时版本号显示占位符，更新记录保持为空
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,19 +77,19 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    appName,
+                    AboutScreen.appName,
                     style: theme.textTheme.headlineSmall
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '版本 $appVersion',
+                    '版本 ${_version.isEmpty ? '--' : _version}',
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    copyright,
+                    AboutScreen.copyright,
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
@@ -233,6 +190,11 @@ class AboutScreen extends StatelessWidget {
 
 class _VersionEntry {
   const _VersionEntry(this.version, this.changes);
+
+  factory _VersionEntry.fromJson(Map<String, dynamic> json) => _VersionEntry(
+        json['version'] as String,
+        (json['changes'] as List).cast<String>(),
+      );
 
   final String version;
   final List<String> changes;

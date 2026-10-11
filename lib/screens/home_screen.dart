@@ -729,18 +729,20 @@ class _HomeScreenState extends State<HomeScreen> {
       elevation: 1,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 标题行：用药箱颜色作为底色
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: Color(box.color),
-            child: Row(
-              children: [
-                Icon(Icons.inventory_2_outlined,
-                    size: 18, color: titleColor),
+      child: InkWell(
+        onTap: () => _goToBox(box.id),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 标题行：用药箱颜色作为底色
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: Color(box.color),
+              child: Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined,
+                      size: 18, color: titleColor),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -760,11 +762,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final m in medicines) _buildShortageMedicineRow(m, theme),
-              ],
+                  for (final m in medicines)
+                    _buildShortageMedicineRow(m, theme),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

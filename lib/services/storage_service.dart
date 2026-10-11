@@ -167,9 +167,6 @@ class StorageService extends ChangeNotifier {
           updatedAt: now,
         );
         changed = true;
-      } else {
-        debugPrint(
-            '[自动扣减] ${m.name}: 无需扣减 (stock=${m.currentStock}, adjusted=$adjusted, lastStockUpdate=${m.lastStockUpdate})');
       }
     }
     if (changed) {
@@ -294,10 +291,9 @@ class StorageService extends ChangeNotifier {
 
   /// 根据 ID 查找药品
   Medicine? findById(String id) {
-    try {
-      return _medicines.firstWhere((m) => m.id == id);
-    } catch (_) {
-      return null;
+    for (final m in _medicines) {
+      if (m.id == id) return m;
     }
+    return null;
   }
 }
