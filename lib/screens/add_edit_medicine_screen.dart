@@ -370,6 +370,29 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     );
   }
 
+  /// 分组标题：图标 + 文字，尺寸与卡片内其它字段一致
+  Widget _sectionHeader(String title, IconData icon) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
   Widget _buildDropdown({
     required String value,
     required List<String> items,
@@ -562,6 +585,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
+                      _sectionHeader('药品信息', Icons.medication_outlined),
                       Row(
                         children: [
                           const Icon(Icons.medication_outlined, size: 20),
@@ -640,6 +664,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _sectionHeader('服用安排', Icons.schedule),
                       Row(
                         children: [
                           const Icon(Icons.schedule, size: 20),
@@ -740,6 +765,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
+                      _sectionHeader('库存信息', Icons.shelves),
                       Row(
                         children: [
                           const Icon(Icons.shelves, size: 20),

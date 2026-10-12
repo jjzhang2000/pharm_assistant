@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/medicine.dart';
 import '../services/storage_service.dart';
+import '../theme/app_colors.dart';
 
 /// 药品卡片：展示名称/剂量/剩余天数，支持快速加减库存与长按拖动移动
 class MedicineCard extends StatefulWidget {
@@ -157,30 +158,32 @@ class _MedicineCardState extends State<MedicineCard> {
                           medicine.isStarred ? Icons.star : Icons.star_border,
                           size: 22,
                           color: medicine.isStarred
-                              ? const Color(0xFFE53935)
+                              ? starRed
                               : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                         ),
                       ),
                     ),
                   const Spacer(),
-                  Icon(
-                    Icons.shelves,
-                    size: 16,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(width: 4),
                   _QuickAdjustButton(
                     icon: Icons.remove,
                     onTap: () => _adjust(-1),
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    Medicine.formatStock(_stock),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  const SizedBox(width: 8),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(scale: animation, child: child),
+                    ),
+                    child: Text(
+                      Medicine.formatStock(_stock),
+                      key: ValueKey(_stock),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 8),
                   _QuickAdjustButton(
                     icon: Icons.add,
                     onTap: () => _adjust(1),
@@ -195,26 +198,40 @@ class _MedicineCardState extends State<MedicineCard> {
   }
 }
 
-class _QuickAdjustButton extends StatelessWidget {
+class _QuickAdjustButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
 
   const _QuickAdjustButton({required this.icon, required this.onTap});
 
   @override
+  State<_QuickAdjustButton> createState() => _QuickAdjustButtonState();
+}
+
+class _QuickAdjustButtonState extends State<_QuickAdjustButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context)
-          .colorScheme
-          .surfaceContainerHighest
-          .withValues(alpha: 0.5),
-      borderRadius: BorderRadius.circular(6),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Icon(icon, size: 18),
+    final scheme = Theme.of(context).colorScheme;
+    return AnimatedScale(
+      scale: _pressed ? 0.86 : 1.0,
+      duration: const Duration(milliseconds: 90),
+      child: Material(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: widget.onTap,
+          onHighlightChanged: (v) {
+            if (_pressed != v) setState(() => _pressed = v);
+          },
+          // 38×38 正方形触控区
+          child: SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(widget.icon, size: 20, color: scheme.onSurface),
+          ),
         ),
       ),
     );

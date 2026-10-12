@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'services/storage_service.dart';
+import 'services/theme_service.dart';
 import 'services/notification_service.dart';
 import 'app.dart';
 
@@ -9,7 +10,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final storageService = StorageService();
-  await storageService.load();
+  final themeService = ThemeService();
+  await Future.wait([storageService.load(), themeService.load()]);
 
   try {
     await NotificationService().init().timeout(
@@ -24,8 +26,11 @@ void main() async {
   storageService.scheduleAllAlerts();
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: storageService,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: storageService),
+        ChangeNotifierProvider.value(value: themeService),
+      ],
       child: const MedicineApp(),
     ),
   );

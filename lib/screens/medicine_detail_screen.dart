@@ -91,9 +91,10 @@ class MedicineDetailScreen extends StatelessWidget {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
+                    decoration: _headerDecoration(
+                      theme,
+                      theme.colorScheme.primaryContainer,
+                      theme.colorScheme.primary,
                     ),
                     child: Column(
                       children: [
@@ -132,11 +133,14 @@ class MedicineDetailScreen extends StatelessWidget {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isAlert
+                    decoration: _headerDecoration(
+                      theme,
+                      isAlert
                           ? theme.colorScheme.errorContainer
                           : theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
+                      isAlert
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.primary,
                     ),
                     child: Column(
                       children: [
@@ -214,11 +218,7 @@ class MedicineDetailScreen extends StatelessWidget {
                     value: '${medicine.dosagePerTime} ${medicine.form}',
                   ),
                   if (medicine.hasSchedule)
-                    _InfoRow(
-                      icon: Icons.access_time,
-                      label: '服用安排',
-                      value: _scheduleSummary(medicine),
-                    ),
+                    _ScheduleChips(medicine: medicine),
                   if (medicine.isInfrequent || medicine.hasSchedule)
                     _InfoRow(
                       icon: Icons.event,
@@ -248,92 +248,7 @@ class MedicineDetailScreen extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // 库存调整
-                const _SectionHeader(icon: Icons.tune, label: '快速调整库存'),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          if (medicine.currentStock > 0) {
-                            final updated = medicine.copyWith(
-                              currentStock: medicine.currentStock - 1,
-                              updatedAt: DateTime.now(),
-                              lastStockUpdate: DateTime.now(),
-                            );
-                            storage.update(updated);
-                          }
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: const Icon(Icons.remove),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 3,
-                      child: FilledButton(
-                        onPressed: () {
-                          final updated = medicine.copyWith(
-                            currentStock: medicine.currentStock + 1,
-                            updatedAt: DateTime.now(),
-                            lastStockUpdate: DateTime.now(),
-                          );
-                          storage.update(updated);
-                        },
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          foregroundColor: theme.colorScheme.onPrimaryContainer,
-                        ),
-                        child: const Icon(Icons.add),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 3,
-                      child: FilledButton(
-                        onPressed: () {
-                          final updated = medicine.copyWith(
-                            currentStock: medicine.currentStock + 10,
-                            updatedAt: DateTime.now(),
-                            lastStockUpdate: DateTime.now(),
-                          );
-                          storage.update(updated);
-                        },
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          foregroundColor: theme.colorScheme.onPrimaryContainer,
-                        ),
-                        child: const Text('+10'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 3,
-                      child: FilledButton(
-                        onPressed: () {
-                          final updated = medicine.copyWith(
-                            currentStock: medicine.currentStock + 50,
-                            updatedAt: DateTime.now(),
-                            lastStockUpdate: DateTime.now(),
-                          );
-                          storage.update(updated);
-                        },
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          foregroundColor: theme.colorScheme.onPrimaryContainer,
-                        ),
-                        child: const Text('+50'),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildQuickAdjust(context, storage, medicine),
               ],
             ),
           ),
@@ -342,21 +257,112 @@ class MedicineDetailScreen extends StatelessWidget {
     );
   }
 
-  /// 生成服用安排的显示文本，如：每天 08:00 14:00；每周 下一轮 8/18、8/20 09:00
-  String _scheduleSummary(Medicine m) {
-    final parts = <String>[];
-    if (m.periodUnit == '天') {
-      for (final s in m.doseSlots) {
-        parts.add('${s.toString().padLeft(2, '0')}:00');
-      }
-      return parts.join(' ');
-    }
-    // 周/月：显式下一轮的各次服用日期 + 服用小时
-    for (final d in m.nextRoundDates) {
-      parts.add('${d.month}/${d.day}');
-    }
-    parts.add('${(m.doseHour ?? 8).toString().padLeft(2, '0')}:00');
-    return parts.join(' ');
+  /// 头部卡片装饰：渐变背景 + 柔和阴影，突出视觉焦点
+  BoxDecoration _headerDecoration(ThemeData theme, Color base, Color accent) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color.lerp(base, accent, 0.18)!, base],
+      ),
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: accent.withValues(alpha: 0.22),
+          blurRadius: 14,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  /// 快速调整库存步进器：位于页面底部「快速调整库存」分组中
+  Widget _buildQuickAdjust(
+      BuildContext context, StorageService storage, Medicine medicine) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: OutlinedButton(
+            onPressed: () {
+              if (medicine.currentStock > 0) {
+                final updated = medicine.copyWith(
+                  currentStock: medicine.currentStock - 1,
+                  updatedAt: DateTime.now(),
+                  lastStockUpdate: DateTime.now(),
+                );
+                storage.update(updated);
+              }
+            },
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: const Icon(Icons.remove),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 3,
+          child: FilledButton(
+            onPressed: () {
+              final updated = medicine.copyWith(
+                currentStock: medicine.currentStock + 1,
+                updatedAt: DateTime.now(),
+                lastStockUpdate: DateTime.now(),
+              );
+              storage.update(updated);
+            },
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+            ),
+            child: const Icon(Icons.add),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 3,
+          child: FilledButton(
+            onPressed: () {
+              final updated = medicine.copyWith(
+                currentStock: medicine.currentStock + 10,
+                updatedAt: DateTime.now(),
+                lastStockUpdate: DateTime.now(),
+              );
+              storage.update(updated);
+            },
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+            ),
+            child: const Text('+10'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 3,
+          child: FilledButton(
+            onPressed: () {
+              final updated = medicine.copyWith(
+                currentStock: medicine.currentStock + 50,
+                updatedAt: DateTime.now(),
+                lastStockUpdate: DateTime.now(),
+              );
+              storage.update(updated);
+            },
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+            ),
+            child: const Text('+50'),
+          ),
+        ),
+      ],
+    );
   }
 
   void _confirmDelete(
@@ -503,6 +509,76 @@ class MedicineDetailScreen extends StatelessWidget {
       return (value == null || value.isEmpty) ? null : value;
     });
   }
+}
+
+/// 服用安排胶囊标签：每个时间点/日期渲染为一个 Chip
+class _ScheduleChips extends StatelessWidget {
+  final Medicine medicine;
+
+  const _ScheduleChips({required this.medicine});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final labels = _scheduleLabels(medicine);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.access_time,
+            size: 20,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '服用安排',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final label in labels)
+                  Chip(
+                    label: Text(label),
+                    labelStyle: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSecondaryContainer,
+                    ),
+                    backgroundColor: theme.colorScheme.secondaryContainer,
+                    side: BorderSide.none,
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 生成服用安排胶囊的标签列表：每天→各时刻；每周/月→各日期 + 服用小时
+List<String> _scheduleLabels(Medicine m) {
+  if (m.periodUnit == '天') {
+    return [
+      for (final s in m.doseSlots)
+        '${s.toString().padLeft(2, '0')}:00',
+    ];
+  }
+  return [
+    for (final d in m.nextRoundDates) '${d.month}/${d.day}',
+    '${(m.doseHour ?? 8).toString().padLeft(2, '0')}:00',
+  ];
 }
 
 class _SectionHeader extends StatelessWidget {

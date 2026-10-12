@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../models/medicine.dart';
 import '../models/medicine_box.dart';
 import '../services/storage_service.dart';
+import '../theme/app_colors.dart';
 import '../widgets/medicine_card.dart';
 import '../widgets/empty_state.dart';
 
@@ -203,7 +204,11 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _currentIndex = pageIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _pageController.hasClients) {
-        _pageController.jumpToPage(pageIndex);
+        _pageController.animateToPage(
+          pageIndex,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       }
     });
   }
@@ -483,11 +488,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               },
               child: AppBar(
-                backgroundColor: onShortagePage
-                    ? const Color(0xFFE8B4B4)
-                    : Color(currentBox.color),
-                foregroundColor: theme.colorScheme.onSurface,
-                title: Text(onShortagePage ? '短缺药品' : currentBox.name),
+                backgroundColor: softSurface(
+                  onShortagePage ? shortageSoft : Color(currentBox.color),
+                  theme.brightness,
+                ),
+                foregroundColor: onSoftSurface(theme.brightness),
+                title: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
+                  child: Text(
+                    onShortagePage ? '短缺药品' : currentBox.name,
+                    key: ValueKey(onShortagePage ? 'shortage' : currentBox.id),
+                  ),
+                ),
                 actions: [
                   if (onShortagePage) ...[
                     IconButton(
@@ -554,21 +568,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemCount: medicines.length,
                       itemBuilder: (context, i) {
                         final medicine = medicines[i];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: LongPressDraggable<Medicine>(
-                            data: medicine,
-                            onDragStarted: () =>
-                                setState(() => _draggingMedicine = true),
-                            onDragEnd: (_) =>
-                                setState(() => _draggingMedicine = false),
-                            onDraggableCanceled: (_, __) =>
-                                setState(() => _draggingMedicine = false),
-                            feedback: _medicineDragFeedback(medicine, theme),
-                            child: MedicineCard(
-                              medicine: medicine,
-                              onMovedToBox: _goToBox,
-                              onQuickAdjust: _onQuickAdjust,
+                        return _CardEntrance(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: LongPressDraggable<Medicine>(
+                              data: medicine,
+                              onDragStarted: () =>
+                                  setState(() => _draggingMedicine = true),
+                              onDragEnd: (_) =>
+                                  setState(() => _draggingMedicine = false),
+                              onDraggableCanceled: (_, __) =>
+                                  setState(() => _draggingMedicine = false),
+                              feedback: _medicineDragFeedback(medicine, theme),
+                              child: MedicineCard(
+                                medicine: medicine,
+                                onMovedToBox: _goToBox,
+                                onQuickAdjust: _onQuickAdjust,
+                              ),
                             ),
                           ),
                         );
@@ -577,16 +593,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-              // 页面底部药箱指示点（随系统底部导航栏显示/隐藏动态上移）
+              // 页面底部药箱指示：当前药箱名 + 指示点（随系统底部导航栏显示/隐藏动态上移）
               Padding(
                 padding: EdgeInsets.only(
                   bottom: 8 + MediaQuery.of(context).padding.bottom,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (var i = 0; i < boxes.length; i++)
-                      _dot(!onShortagePage && i == boxIndex, theme),
+                    // 固定高度容器，避免药箱名的出现/消失导致指示点上下跳动
+                    SizedBox(
+                      height: 20,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        transitionBuilder: (child, animation) =>
+                            FadeTransition(opacity: animation, child: child),
+                        child: onShortagePage
+                            ? const SizedBox.shrink()
+                            : Text(
+                                currentBox.name,
+                                key: ValueKey(currentBox.id),
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (var i = 0; i < boxes.length; i++)
+                          _dot(!onShortagePage && i == boxIndex, theme),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -723,7 +764,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 单个药箱的短缺药品卡片
   Widget _buildShortageCard(
       MedicineBox box, List<Medicine> medicines, ThemeData theme) {
-    final titleColor = theme.colorScheme.onSurface;
+    final titleColor = onSoftSurface(theme.brightness);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
@@ -738,7 +779,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: Color(box.color),
+              color: softSurface(Color(box.color), theme.brightness),
               child: Row(
                 children: [
                   Icon(Icons.inventory_2_outlined,
@@ -776,7 +817,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 星标短缺药品卡片：聚合展示所有药箱的星标药品
   Widget _buildStarShortageCard(
       List<Medicine> medicines, ThemeData theme) {
-    final titleColor = theme.colorScheme.onSurface;
+    final titleColor = onSoftSurface(theme.brightness);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
@@ -788,10 +829,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: const Color(0xFFF2C9C9),
+            color: softSurface(starSoft, theme.brightness),
             child: Row(
               children: [
-                const Icon(Icons.star, size: 18, color: Color(0xFFE53935)),
+                const Icon(Icons.star, size: 18, color: starRed),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -865,3 +906,27 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 enum _BoxAction { newBox, rename, delete }
+
+/// 卡片入场动画：首次出现时淡入并轻微上移，仅播放一次
+class _CardEntrance extends StatelessWidget {
+  final Widget child;
+
+  const _CardEntrance({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOut,
+      child: child,
+      builder: (context, value, child) => Opacity(
+        opacity: value.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, 12 * (1 - value)),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
