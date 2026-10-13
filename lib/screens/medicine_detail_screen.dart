@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/gen/app_localizations.dart';
+import '../l10n/unit_labels.dart';
 import '../models/medicine.dart';
 import '../services/storage_service.dart';
 
@@ -13,6 +15,7 @@ class MedicineDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Consumer<StorageService>(
       builder: (context, storage, _) {
@@ -21,7 +24,7 @@ class MedicineDetailScreen extends StatelessWidget {
         if (medicine == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const Center(child: Text('药品不存在')),
+            body: Center(child: Text(l10n.medicineNotFound)),
           );
         }
 
@@ -37,7 +40,7 @@ class MedicineDetailScreen extends StatelessWidget {
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
-                tooltip: '编辑',
+                tooltip: l10n.edit,
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 constraints: const BoxConstraints(),
                 onPressed: () async {
@@ -49,21 +52,21 @@ class MedicineDetailScreen extends StatelessWidget {
                 },
               ),
               PopupMenuButton<_MedicineAction>(
-                tooltip: '更多',
+                tooltip: l10n.more,
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4),
                   child: Icon(Icons.more_horiz),
                 ),
                 onSelected: (action) =>
                     _handleAction(context, storage, medicine, action),
-                itemBuilder: (context) => const [
+                itemBuilder: (context) => [
                   PopupMenuItem(
                     value: _MedicineAction.move,
                     child: Row(
                       children: [
-                        Icon(Icons.drive_file_move_outline, size: 20),
-                        SizedBox(width: 12),
-                        Text('移动'),
+                        const Icon(Icons.drive_file_move_outline, size: 20),
+                        const SizedBox(width: 12),
+                        Text(l10n.move),
                       ],
                     ),
                   ),
@@ -71,9 +74,9 @@ class MedicineDetailScreen extends StatelessWidget {
                     value: _MedicineAction.delete,
                     child: Row(
                       children: [
-                        Icon(Icons.delete_outline, size: 20),
-                        SizedBox(width: 12),
-                        Text('删除'),
+                        const Icon(Icons.delete_outline, size: 20),
+                        const SizedBox(width: 12),
+                        Text(l10n.delete),
                       ],
                     ),
                   ),
@@ -99,7 +102,7 @@ class MedicineDetailScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         Text(
-                          '${Medicine.formatStock(medicine.currentStock)} ${medicine.form}',
+                          '${Medicine.formatStock(medicine.currentStock)} ${formLabel(l10n, medicine.form)}',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.displaySmall?.copyWith(
                             fontWeight: FontWeight.bold,
@@ -118,7 +121,7 @@ class MedicineDetailScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '当前存量',
+                              l10n.currentStock,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onPrimaryContainer
                                     .withValues(alpha: 0.8),
@@ -151,8 +154,8 @@ class MedicineDetailScreen extends StatelessWidget {
                             color: theme.colorScheme.onErrorContainer,
                           ),
                         Text(
-                          '${Medicine.formatStock(medicine.currentStock)} ${medicine.form} / '
-                          '${remainingDays == double.infinity ? '--' : '${remainingDays.floor()} 天'}',
+                          '${Medicine.formatStock(medicine.currentStock)} ${formLabel(l10n, medicine.form)} / '
+                          '${remainingDays == double.infinity ? '--' : l10n.daysRemaining(remainingDays.floor())}',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.displaySmall?.copyWith(
                             fontWeight: FontWeight.bold,
@@ -176,7 +179,7 @@ class MedicineDetailScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '剩余存量 / 天数',
+                              l10n.remainingStockDays,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: isAlert
                                     ? theme.colorScheme.onErrorContainer
@@ -194,56 +197,60 @@ class MedicineDetailScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // 药品信息
-                const _SectionHeader(icon: Icons.medication, label: '药品信息'),
+                _SectionHeader(icon: Icons.medication, label: l10n.medicineInfo),
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.medication_outlined,
-                  label: '规格',
-                  value: '${medicine.dosageStrength.toInt()} ${medicine.dosageStrengthUnit} / ${medicine.form}',
+                  label: l10n.spec,
+                  value: '${medicine.dosageStrength.toInt()} ${medicine.dosageStrengthUnit} / ${formLabel(l10n, medicine.form)}',
                 ),
 
                 // 服用方式：备用药箱不服用，不展示
                 if (!isBackup) ...[
                   const SizedBox(height: 24),
-                  const _SectionHeader(icon: Icons.repeat, label: '服用方式'),
+                  _SectionHeader(icon: Icons.repeat, label: l10n.dosageMethod),
                   const SizedBox(height: 8),
                   _InfoRow(
                     icon: Icons.schedule,
-                    label: '频次',
-                    value: '每 ${medicine.periodValue} ${medicine.periodUnit} ${medicine.timesPerPeriod} 次',
+                    label: l10n.frequency,
+                    value: l10n.frequencyValue(
+                      '${medicine.periodValue}',
+                      periodUnitLabel(l10n, medicine.periodUnit),
+                      '${medicine.timesPerPeriod}',
+                    ),
                   ),
                   _InfoRow(
                     icon: Icons.scale,
-                    label: '每次剂量',
-                    value: '${medicine.dosagePerTime} ${medicine.form}',
+                    label: l10n.dosePerTimeLabel,
+                    value: '${medicine.dosagePerTime} ${formLabel(l10n, medicine.form)}',
                   ),
                   if (medicine.hasSchedule)
                     _ScheduleChips(medicine: medicine),
                   if (medicine.isInfrequent || medicine.hasSchedule)
                     _InfoRow(
                       icon: Icons.event,
-                      label: '下次服用日期',
+                      label: l10n.nextDoseDate,
                       value: medicine.adjustedNextDoseDate != null
                           ? '${medicine.adjustedNextDoseDate!.year}/${medicine.adjustedNextDoseDate!.month}/${medicine.adjustedNextDoseDate!.day}'
-                          : '未设置',
+                          : l10n.notSet,
                     ),
                 ],
 
                 const SizedBox(height: 24),
 
                 // 库存信息
-                const _SectionHeader(icon: Icons.inventory_2, label: '库存信息'),
+                _SectionHeader(icon: Icons.inventory_2, label: l10n.inventoryInfo),
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.shelves,
-                  label: '当前存量',
-                  value: '${Medicine.formatStock(medicine.currentStock)} ${medicine.form}',
+                  label: l10n.currentStock,
+                  value: '${Medicine.formatStock(medicine.currentStock)} ${formLabel(l10n, medicine.form)}',
                 ),
                 if (!isBackup)
                   _InfoRow(
                     icon: Icons.notifications_active_outlined,
-                    label: '提醒阈值',
-                    value: '低于 ${medicine.alertThreshold} 天提醒',
+                    label: l10n.reminderThreshold,
+                    value: l10n.belowThresholdReminder('${medicine.alertThreshold}'),
                   ),
 
                 const SizedBox(height: 24),
@@ -367,15 +374,16 @@ class MedicineDetailScreen extends StatelessWidget {
 
   void _confirmDelete(
       BuildContext context, StorageService storage, Medicine medicine) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除「${medicine.name}」吗？此操作不可撤销。'),
+        title: Text(l10n.confirmDelete),
+        content: Text(l10n.confirmDeleteMedicine(medicine.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -386,7 +394,7 @@ class MedicineDetailScreen extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('删除'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -432,12 +440,13 @@ class MedicineDetailScreen extends StatelessWidget {
   /// 弹出药箱选择列表（不含当前药箱），最后一项为「新药箱」
   Future<_MoveTarget?> _showMoveDialog(
       BuildContext context, StorageService storage, Medicine medicine) {
+    final l10n = AppLocalizations.of(context);
     final otherBoxes =
         storage.boxes.where((b) => b.id != medicine.boxId).toList();
     return showDialog<_MoveTarget>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('移动到'),
+        title: Text(l10n.moveTo),
         children: [
           for (final box in otherBoxes)
             SimpleDialogOption(
@@ -471,7 +480,7 @@ class MedicineDetailScreen extends StatelessWidget {
                 Icon(Icons.add_circle_outline,
                     size: 22, color: Theme.of(ctx).colorScheme.primary),
                 const SizedBox(width: 8),
-                const Text('新药箱'),
+                Text(l10n.newBox),
               ],
             ),
           ),
@@ -482,25 +491,26 @@ class MedicineDetailScreen extends StatelessWidget {
 
   /// 弹出新建药箱输入框，返回非空药箱名
   Future<String?> _showNewBoxNameDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('新药箱'),
+        title: Text(l10n.newBox),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: '请输入药箱名'),
+          decoration: InputDecoration(hintText: l10n.boxNameHint),
           onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('确定'),
+            child: Text(l10n.confirm),
           ),
         ],
       ),
@@ -520,6 +530,7 @@ class _ScheduleChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final labels = _scheduleLabels(medicine);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -533,7 +544,7 @@ class _ScheduleChips extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            '服用安排',
+            l10n.scheduleSection,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),

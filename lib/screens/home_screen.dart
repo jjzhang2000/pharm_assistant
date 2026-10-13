@@ -6,6 +6,8 @@ import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:gal/gal.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/gen/app_localizations.dart';
+import '../l10n/unit_labels.dart';
 import '../models/medicine.dart';
 import '../models/medicine_box.dart';
 import '../services/storage_service.dart';
@@ -76,25 +78,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 弹出新建药箱输入框，返回非空药箱名
   Future<String?> _showAddBoxDialog() {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('新药箱'),
+        title: Text(l10n.newBox),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: '请输入药箱名'),
+          decoration: InputDecoration(hintText: l10n.boxNameHint),
           onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('确定'),
+            child: Text(l10n.confirm),
           ),
         ],
       ),
@@ -136,25 +139,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 弹出重命名药箱输入框，返回非空新名称
   Future<String?> _showRenameBoxDialog(String currentName) {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: currentName);
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('重命名药箱'),
+        title: Text(l10n.renameBox),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: '请输入新的药箱名'),
+          decoration: InputDecoration(hintText: l10n.newBoxNameHint),
           onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('确定'),
+            child: Text(l10n.confirm),
           ),
         ],
       ),
@@ -166,22 +170,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 弹出删除药箱确认框
   Future<bool> _confirmDeleteBox(MedicineBox box) async {
+    final l10n = AppLocalizations.of(context);
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除药箱「${box.name}」吗？其中的药品将一并删除，此操作不可撤销。'),
+        title: Text(l10n.confirmDelete),
+        content: Text(l10n.confirmDeleteBox(box.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(ctx).colorScheme.error,
             ),
-            child: const Text('删除'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -215,6 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 长按拖动时展示的全屏药箱概览（类似安卓桌面的各页面缩略视图）
   Widget _buildBoxOverview(StorageService storage, ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return Positioned.fill(
       child: Material(
         color: Colors.black54,
@@ -227,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12, left: 4),
                   child: Text(
-                    '拖动药品到目标药箱',
+                    l10n.dragMedicineHint,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -294,7 +300,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${storage.medicinesForBox(box.id).length} 种药品',
+                                    l10n.medicineCount(storage
+                                        .medicinesForBox(box.id)
+                                        .length),
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.7),
@@ -319,6 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 概览中的「新药箱」卡片：拖入即新建药箱并移入
   Widget _buildNewBoxTarget(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return DragTarget<Medicine>(
       onAcceptWithDetails: (d) => _moveMedicineToNewBox(d.data),
       builder: (context, candidate, rejected) {
@@ -341,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Icon(Icons.add, size: 44, color: Colors.white),
                 const SizedBox(height: 8),
                 Text(
-                  '新药箱',
+                  l10n.newBox,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -366,13 +375,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 生成不重名的药箱名：新药箱、新药箱2、新药箱3……
   String _uniqueBoxName(StorageService storage) {
+    final base = AppLocalizations.of(context).newBox;
     final existing = storage.boxes.map((b) => b.name).toSet();
-    if (!existing.contains('新药箱')) return '新药箱';
+    if (!existing.contains(base)) return base;
     var i = 2;
-    while (existing.contains('新药箱$i')) {
+    while (existing.contains('$base$i')) {
       i++;
     }
-    return '新药箱$i';
+    return '$base$i';
   }
 
   /// 拖动时跟随手指的药品预览
@@ -452,6 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Consumer<StorageService>(
       builder: (context, storage, _) {
@@ -498,42 +509,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   transitionBuilder: (child, animation) =>
                       FadeTransition(opacity: animation, child: child),
                   child: Text(
-                    onShortagePage ? '短缺药品' : currentBox.name,
+                    onShortagePage ? l10n.shortagePageTitle : currentBox.name,
                     key: ValueKey(onShortagePage ? 'shortage' : currentBox.id),
                   ),
                 ),
                 actions: [
                   if (onShortagePage) ...[
                     IconButton(
-                      tooltip: '分享短缺药品',
+                      tooltip: l10n.shareShortageTooltip,
                       icon: const Icon(Icons.share_outlined),
                       onPressed: _shareShortage,
                     ),
                     IconButton(
-                      tooltip: '关于',
-                      icon: const Icon(Icons.info_outline),
+                      tooltip: l10n.settings,
+                      icon: const Icon(Icons.settings_outlined),
                       onPressed: () =>
                           Navigator.pushNamed(context, '/about'),
                     ),
                   ] else
                     PopupMenuButton<_BoxAction>(
-                      tooltip: '更多',
+                      tooltip: l10n.more,
                       icon: const Icon(Icons.more_horiz),
                       onSelected: (action) => _handleBoxAction(action, currentBox),
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: _BoxAction.newBox,
-                          child: Text('新药箱'),
+                          child: Text(l10n.newBox),
                         ),
                         if (!currentBox.isBackup) ...[
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: _BoxAction.rename,
-                            child: Text('重命名'),
+                            child: Text(l10n.rename),
                           ),
                           PopupMenuItem(
                             value: _BoxAction.delete,
                             enabled: boxes.length > 1,
-                            child: const Text('删除'),
+                            child: Text(l10n.delete),
                           ),
                         ],
                       ],
@@ -593,41 +604,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-              // 页面底部药箱指示：当前药箱名 + 指示点（随系统底部导航栏显示/隐藏动态上移）
+              // 页面底部药箱指示：指示点（随系统底部导航栏显示/隐藏动态上移）
               Padding(
                 padding: EdgeInsets.only(
                   bottom: 8 + MediaQuery.of(context).padding.bottom,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 固定高度容器，避免药箱名的出现/消失导致指示点上下跳动
-                    SizedBox(
-                      height: 20,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        transitionBuilder: (child, animation) =>
-                            FadeTransition(opacity: animation, child: child),
-                        child: onShortagePage
-                            ? const SizedBox.shrink()
-                            : Text(
-                                currentBox.name,
-                                key: ValueKey(currentBox.id),
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        for (var i = 0; i < boxes.length; i++)
-                          _dot(!onShortagePage && i == boxIndex, theme),
-                      ],
-                    ),
+                    for (var i = 0; i < boxes.length; i++)
+                      _dot(!onShortagePage && i == boxIndex, theme),
                   ],
                 ),
               ),
@@ -641,7 +627,7 @@ class _HomeScreenState extends State<HomeScreen> {
               : FloatingActionButton(
                   onPressed: () => _navigateToAdd(currentBox.id),
                   shape: const CircleBorder(),
-                  tooltip: '添加药品',
+                  tooltip: l10n.addMedicineTooltip,
                   child: const Icon(Icons.add),
                 ),
         );
@@ -651,6 +637,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 生成短缺药品整页长截图并保存到相册，随后弹出分享提示
   Future<void> _shareShortage() async {
+    final l10n = AppLocalizations.of(context);
     final boundary = _shortageKey.currentContext?.findRenderObject()
         as RenderRepaintBoundary?;
     if (boundary == null || !mounted) return;
@@ -667,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } on GalException {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('保存到相册失败，请检查相册权限后重试')),
+        SnackBar(content: Text(l10n.saveToAlbumFailed)),
       );
       return;
     }
@@ -676,12 +663,12 @@ class _HomeScreenState extends State<HomeScreen> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('已保存到相册'),
-        content: const Text('短缺药品页面长截图已保存到手机相册，可在微信、QQ 等应用中分享给好友。'),
+        title: Text(l10n.savedToAlbum),
+        content: Text(l10n.savedToAlbumMessage),
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('知道了'),
+            child: Text(l10n.gotIt),
           ),
         ],
       ),
@@ -691,6 +678,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 短缺药品页：顶部聚合星标药品，其余按药箱分组显示
   Widget _buildShortagePage(StorageService storage) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final cards = <Widget>[];
 
     // 星标卡片：聚合所有药箱的短缺星标药品（备用药箱不参与短缺统计）
@@ -733,7 +721,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                '暂无短缺药品',
+                l10n.noShortageMedicine,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -817,6 +805,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 星标短缺药品卡片：聚合展示所有药箱的星标药品
   Widget _buildStarShortageCard(
       List<Medicine> medicines, ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     final titleColor = onSoftSurface(theme.brightness);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -836,7 +825,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '星标',
+                    l10n.starred,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: titleColor,
@@ -863,6 +852,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 单个短缺药品条目：名称 + 剩余存量 / 剩余天数
   Widget _buildShortageMedicineRow(Medicine m, ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
+    final form = formLabel(l10n, m.form);
+    final days = m.remainingDays.floor();
     return Padding(
       padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
       child: Row(
@@ -876,8 +868,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(width: 8),
           Text(
-            '${Medicine.formatStock(m.currentStock)} ${m.form} / '
-            '${m.remainingDays.floor()} 天',
+            '${Medicine.formatStock(m.currentStock)} $form / '
+            '${l10n.daysRemaining(days)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.error,
               fontWeight: FontWeight.w600,

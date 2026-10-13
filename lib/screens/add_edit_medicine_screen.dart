@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/gen/app_localizations.dart';
+import '../l10n/unit_labels.dart';
 import '../models/medicine.dart';
 import '../services/medicine_lookup_service.dart';
 import '../services/storage_service.dart';
@@ -146,6 +148,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
   /// 扫描药盒条码/二维码，识别结果填入名称框并尝试联网查询
   Future<void> _scanMedicine() async {
+    final l10n = AppLocalizations.of(context);
     final scanned = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const ScanScreen()),
     );
@@ -158,7 +161,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       // 20 位药品追溯码：官方查询接口不开放，直接提示手动输入
       if (text.length == 20) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('这是药品追溯码，暂无法查询，请手动输入药品名称')),
+          SnackBar(content: Text(l10n.traceCodeUnsupported)),
         );
         return;
       }
@@ -171,8 +174,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         setState(() => _isLookingUp = false);
         final msg = e.toString();
         final hint = msg.contains('未申请') || msg.contains('160')
-            ? '请先在天行数据控制台申请「商品条码查询」接口'
-            : '条码查询失败：$msg';
+            ? l10n.barcodeApiNotApplied
+            : l10n.barcodeLookupFailed(msg);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(hint)));
         return;
       }
@@ -180,7 +183,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       if (info == null) {
         setState(() => _isLookingUp = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('未查到该条码「$text」对应的药品，请手动输入名称')),
+          SnackBar(content: Text(l10n.barcodeNotFound(text))),
         );
         return;
       }
@@ -208,10 +211,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
   /// 联网查询药品规范信息并填入表单
   Future<void> _lookupMedicine() async {
+    final l10n = AppLocalizations.of(context);
     final keyword = _nameController.text.trim();
     if (keyword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先输入药品名称')),
+        SnackBar(content: Text(l10n.enterMedicineNameFirst)),
       );
       return;
     }
@@ -221,14 +225,14 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       if (!mounted) return;
       setState(() => _applyLookupResult(result));
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已填入「${result.name}」的信息，请核对服用剂量与周期')),
+        SnackBar(content: Text(l10n.lookupApplied(result.name))),
       );
     } catch (e) {
       if (!mounted) return;
       final msg = e.toString();
       final hint = msg.contains('未查询到') || msg.contains('数据返回为空')
-          ? '已填入名称，但未查到该药品的说明书，剂量/周期请手动填写'
-          : '查询失败：$msg';
+          ? l10n.lookupNameOnly
+          : l10n.lookupFailed(msg);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(hint)));
     } finally {
       if (mounted) setState(() => _isLookingUp = false);
@@ -397,6 +401,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     required String value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
+    String Function(String)? labelFor,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -409,7 +414,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           value: value,
           isDense: true,
           items: items
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .map((e) => DropdownMenuItem(
+                  value: e, child: Text(labelFor == null ? e : labelFor(e))))
               .toList(),
           onChanged: onChanged,
         ),
@@ -418,9 +424,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   }
 
   Widget _formDropdown() {
+    final l10n = AppLocalizations.of(context);
     return _buildDropdown(
       value: _form,
       items: _forms,
+      labelFor: (e) => formLabel(l10n, e),
       onChanged: (v) {
         if (v != null) setState(() => _form = v);
       },
@@ -528,6 +536,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   Widget _buildTimeSchedule() {
     final times = int.tryParse(_timesPerPeriodController.text) ?? 1;
     final isDaily = _periodUnit == '天';
+    final l10n = AppLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,7 +547,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             const Icon(Icons.access_time, size: 20),
-            Text(isDaily ? '服用时间' : '下轮'),
+            Text(isDaily ? l10n.doseTime : l10n.nextRound),
             if (isDaily)
               for (var i = 0; i < times; i++)
                 _slotPicker(i,
@@ -550,7 +559,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     i < _nextRoundDates.length
                         ? _nextRoundDates[i]
                         : DateTime.now()),
-              const Text('时间'),
+              Text(l10n.timeLabel),
               _doseTimePicker(),
             ],
           ],
@@ -562,10 +571,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isEditing ? '编辑药品' : '添加药品'),
+        title: Text(widget.isEditing ? l10n.editMedicine : l10n.addMedicine),
         backgroundColor: theme.colorScheme.primaryContainer,
         foregroundColor: theme.colorScheme.onPrimaryContainer,
       ),
@@ -585,7 +595,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      _sectionHeader('药品信息', Icons.medication_outlined),
+                      _sectionHeader(l10n.medicineInfo, Icons.medication_outlined),
                       Row(
                         children: [
                           const Icon(Icons.medication_outlined, size: 20),
@@ -593,16 +603,16 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _nameController,
-                              decoration: _decoration(hintText: '药品名称'),
+                              decoration: _decoration(hintText: l10n.medicineName),
                               validator: (v) => (v == null || v.trim().isEmpty)
-                                  ? '请输入药品名称'
+                                  ? l10n.medicineNameRequired
                                   : null,
                             ),
                           ),
                           const SizedBox(width: 8),
                           IconButton(
                             onPressed: _isLookingUp ? null : _lookupMedicine,
-                            tooltip: '联网查询药品信息',
+                            tooltip: l10n.lookupTooltip,
                             icon: _isLookingUp
                                 ? const SizedBox(
                                     width: 20,
@@ -614,7 +624,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           ),
                           IconButton(
                             onPressed: _isLookingUp ? null : _scanMedicine,
-                            tooltip: '扫描药盒条码/二维码',
+                            tooltip: l10n.scanTooltip,
                             icon: const Icon(Symbols.barcode_scanner),
                           ),
                         ],
@@ -630,7 +640,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               controller: _dosageStrengthController,
                               keyboardType: const TextInputType.numberWithOptions(
                                   decimal: true),
-                              decoration: _decoration(hintText: '剂量'),
+                              decoration: _decoration(hintText: l10n.dosage),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -664,12 +674,12 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _sectionHeader('服用安排', Icons.schedule),
+                      _sectionHeader(l10n.scheduleSection, Icons.schedule),
                       Row(
                         children: [
                           const Icon(Icons.schedule, size: 20),
                           const SizedBox(width: 8),
-                          const Text('每'),
+                          Text(l10n.every),
                           const SizedBox(width: 8),
                           SizedBox(
                             width: 48,
@@ -690,6 +700,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           _buildDropdown(
                             value: _periodUnit,
                             items: _periodUnits,
+                            labelFor: (e) => periodUnitLabel(l10n, e),
                             onChanged: (v) {
                               if (v != null) {
                                 setState(() {
@@ -720,7 +731,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text('次'),
+                          Text(l10n.times),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -728,14 +739,14 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                         children: [
                           const Icon(Icons.local_pharmacy, size: 20),
                           const SizedBox(width: 8),
-                          const Text('每次'),
+                          Text(l10n.perDose),
                           const SizedBox(width: 8),
                           Expanded(
                             child: TextFormField(
                               controller: _dosagePerTimeController,
                               keyboardType: const TextInputType.numberWithOptions(
                                   decimal: true),
-                              decoration: _decoration(hintText: '剂量'),
+                              decoration: _decoration(hintText: l10n.dosage),
                               validator: (v) {
                                 final n = double.tryParse(v ?? '');
                                 if (n == null || n <= 0) return ' ';
@@ -765,19 +776,19 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      _sectionHeader('库存信息', Icons.shelves),
+                      _sectionHeader(l10n.inventoryInfo, Icons.shelves),
                       Row(
                         children: [
                           const Icon(Icons.shelves, size: 20),
                           const SizedBox(width: 8),
-                          const Text('当前存量'),
+                          Text(l10n.currentStock),
                           const SizedBox(width: 8),
                           Expanded(
                             child: TextFormField(
                               controller: _stockController,
                               keyboardType: const TextInputType.numberWithOptions(
                                   decimal: true),
-                              decoration: _decoration(hintText: '数量'),
+                              decoration: _decoration(hintText: l10n.quantity),
                               validator: (v) {
                                 final n = double.tryParse(v ?? '');
                                 if (n == null || n < 0) return ' ';
@@ -794,14 +805,14 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                         children: [
                           const Icon(Icons.notifications_active_outlined, size: 20),
                           const SizedBox(width: 8),
-                          const Text('低于'),
+                          Text(l10n.below),
                           const SizedBox(width: 8),
                           Expanded(
                             child: TextFormField(
                               controller: _thresholdController,
                               keyboardType: const TextInputType.numberWithOptions(
                                   decimal: true),
-                              decoration: _decoration(hintText: '数量'),
+                              decoration: _decoration(hintText: l10n.quantity),
                               validator: (v) {
                                 final n = double.tryParse(v ?? '');
                                 if (n == null || n <= 0) return ' ';
@@ -810,7 +821,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text('天提醒'),
+                          Text(l10n.dayReminder),
                         ],
                       ),
                     ],
@@ -823,7 +834,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               FilledButton.icon(
                 onPressed: _save,
                 icon: Icon(widget.isEditing ? Icons.save : Icons.add),
-                label: Text(widget.isEditing ? '保存' : '添加'),
+                label: Text(widget.isEditing ? l10n.save : l10n.add),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),

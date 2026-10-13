@@ -1,0 +1,169 @@
+{
+  "appName": "Little Medicine Box",
+  "copyright": "© 2026 Little Medicine Box · All rights reserved",
+
+  "cancel": "Cancel",
+  "confirm": "OK",
+  "delete": "Delete",
+  "more": "More",
+  "settings": "Settings",
+
+  "newBox": "New box",
+  "boxNameHint": "Enter box name",
+  "renameBox": "Rename box",
+  "newBoxNameHint": "Enter new box name",
+  "confirmDelete": "Confirm delete",
+  "confirmDeleteBox": "Delete box \"{name}\"? All medicines in it will also be deleted. This cannot be undone.",
+  "@confirmDeleteBox": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "dragMedicineHint": "Drag medicine to a target box",
+  "medicineCount": "{count, plural, =1{1 medicine} other{{count} medicines}}",
+  "@medicineCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "shortagePageTitle": "Shortage",
+  "shareShortageTooltip": "Share shortage list",
+  "addMedicineTooltip": "Add medicine",
+  "rename": "Rename",
+  "saveToAlbumFailed": "Failed to save to album. Please check photo permissions and try again.",
+  "savedToAlbum": "Saved to album",
+  "savedToAlbumMessage": "The shortage page screenshot has been saved to your photo album. You can share it in apps like WeChat or QQ.",
+  "gotIt": "Got it",
+  "noShortageMedicine": "No shortage medicines",
+  "starred": "Starred",
+
+  "about": "About",
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "versionHistory": "Version history",
+  "theme": "Theme",
+  "system": "System",
+  "light": "Light",
+  "dark": "Dark",
+  "language": "Language",
+  "colorTeal": "Teal",
+  "colorBlue": "Blue",
+  "colorGreen": "Green",
+  "colorPurple": "Purple",
+
+  "editMedicine": "Edit medicine",
+  "addMedicine": "Add medicine",
+  "medicineInfo": "Medicine info",
+  "scheduleSection": "Schedule",
+  "inventoryInfo": "Inventory",
+  "medicineName": "Medicine name",
+  "medicineNameRequired": "Please enter the medicine name",
+  "lookupTooltip": "Search medicine online",
+  "scanTooltip": "Scan barcode/QR code",
+  "dosage": "Dose",
+  "every": "Every",
+  "times": "times",
+  "perDose": "Per dose",
+  "timeLabel": "Time",
+  "doseTime": "Dose time",
+  "nextRound": "Next round",
+  "currentStock": "Current stock",
+  "quantity": "Quantity",
+  "below": "Below",
+  "dayReminder": "days reminder",
+  "save": "Save",
+  "add": "Add",
+  "traceCodeUnsupported": "This is a medicine traceability code and cannot be queried. Please enter the medicine name manually.",
+  "barcodeApiNotApplied": "Please apply for the \"Barcode Query\" API in the Tianxing Data console first.",
+  "barcodeLookupFailed": "Barcode query failed: {msg}",
+  "@barcodeLookupFailed": {
+    "placeholders": { "msg": { "type": "String" } }
+  },
+  "barcodeNotFound": "No medicine found for barcode \"{code}\". Please enter the name manually.",
+  "@barcodeNotFound": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "enterMedicineNameFirst": "Please enter the medicine name first.",
+  "lookupApplied": "Information for \"{name}\" has been filled in. Please verify the dosage and period.",
+  "@lookupApplied": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "lookupNameOnly": "Filled in the name, but no manual was found. Please enter dosage and period manually.",
+  "lookupFailed": "Query failed: {msg}",
+  "@lookupFailed": {
+    "placeholders": { "msg": { "type": "String" } }
+  },
+
+  "scanTitle": "Scan medicine barcode/QR code",
+  "scanHint": "Align with the barcode or QR code on the medicine package",
+
+  "medicineNotFound": "Medicine not found",
+  "edit": "Edit",
+  "move": "Move",
+  "remainingStockDays": "Remaining / days",
+  "spec": "Specification",
+  "dosageMethod": "Dosage",
+  "frequency": "Frequency",
+  "frequencyValue": "Every {value} {unit} {times} times",
+  "@frequencyValue": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "unit": { "type": "String" },
+      "times": { "type": "String" }
+    }
+  },
+  "dosePerTimeLabel": "Dose per time",
+  "nextDoseDate": "Next dose date",
+  "notSet": "Not set",
+  "reminderThreshold": "Reminder threshold",
+  "belowThresholdReminder": "Reminder when below {days} days",
+  "@belowThresholdReminder": {
+    "placeholders": { "days": { "type": "String" } }
+  },
+  "moveTo": "Move to",
+  "confirmDeleteMedicine": "Delete \"{name}\"? This cannot be undone.",
+  "@confirmDeleteMedicine": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+  "daysRemaining": "{days, plural, =1{1 day} other{{days} days}}",
+  "@daysRemaining": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "backup": "Backup",
+
+  "starShortageTitle": "Starred medicine shortage",
+  "starShortageBody": "{name} is running low, about {days} days left. Please replenish.",
+  "@starShortageBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "days": { "type": "String" }
+    }
+  },
+  "starAlertChannelName": "Starred medicine alerts",
+  "starAlertChannelDesc": "Starred medicine shortage alerts",
+  "starShortageUpcoming": "{name} is about to fall below its threshold. Please replenish.",
+  "@starShortageUpcoming": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "medicineRunningOut": "Medicine running low",
+  "medicineInsufficient": "{name} is running out of stock. Please replenish.",
+  "@medicineInsufficient": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "medicineAlertChannelName": "Medicine alerts",
+  "medicineAlertChannelDesc": "Medicine stock shortage alerts",
+  "medicineExpectedOut": "{name} is expected to run out today. Please replenish.",
+  "@medicineExpectedOut": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+  "unitTablet": "tablet",
+  "unitPill": "pill",
+  "unitCapsule": "capsule",
+  "unitPacket": "packet",
+  "unitBottle": "bottle",
+  "unitVial": "vial",
+  "unitDrop": "drop",
+  "unitDay": "day",
+  "unitWeek": "week",
+  "unitMonth": "month"
+}

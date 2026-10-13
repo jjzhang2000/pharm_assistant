@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../models/medicine.dart';
 import '../services/storage_service.dart';
 import '../theme/app_colors.dart';
@@ -56,6 +57,7 @@ class _MedicineCardState extends State<MedicineCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final storage = context.read<StorageService>();
     final isBackup = storage.isBackupBox(medicine.boxId);
     final remainingDays = medicine.remainingDays;
@@ -107,7 +109,7 @@ class _MedicineCardState extends State<MedicineCard> {
                     Text(
                       remainingDays == double.infinity
                           ? '--'
-                          : '${remainingDays.floor()} 天',
+                          : l10n.daysRemaining(remainingDays.floor()),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: isAlert
                             ? theme.colorScheme.error
@@ -135,7 +137,7 @@ class _MedicineCardState extends State<MedicineCard> {
                     Padding(
                       padding: const EdgeInsets.all(8),
                       child: Text(
-                        '备用',
+                        l10n.backup,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                         ),

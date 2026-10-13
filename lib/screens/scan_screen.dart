@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../l10n/gen/app_localizations.dart';
+
 /// 扫码页面：扫描药盒上的条码/二维码，返回识别到的文本
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -24,8 +26,9 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('扫描药品条码/二维码')),
+      appBar: AppBar(title: Text(l10n.scanTitle)),
       body: Stack(
         children: [
           MobileScanner(onDetect: _onDetect),
@@ -39,9 +42,9 @@ class _ScanScreenState extends State<ScanScreen> {
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                '对准药盒上的条码或二维码',
-                style: TextStyle(color: Colors.white),
+              child: Text(
+                l10n.scanHint,
+                style: const TextStyle(color: Colors.white),
               ),
             ),
           ),

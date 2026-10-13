@@ -5,7 +5,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
+import '../l10n/gen/app_localizations.dart';
 import '../models/medicine.dart';
+import 'locale_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._();
@@ -52,21 +54,22 @@ class NotificationService {
   /// 发送星标药品短缺通知（由 StorageService 在药品转入「星标+短缺」时调用一次）
   Future<void> showStarredShortage(Medicine medicine) async {
     if (!_initialized) return;
+    final l10n = lookupAppLocalizations(LocaleService.current);
     try {
       final remainingDays = medicine.remainingDays.floor();
       await _plugin.show(
         _starId(medicine.id),
-        '星标药品短缺',
-        '${medicine.name} 库存不足，剩余约 $remainingDays 天用量，请及时补充',
-        const NotificationDetails(
+        l10n.starShortageTitle,
+        l10n.starShortageBody(medicine.name, '$remainingDays'),
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'medicine_star_alert',
-            '星标药品提醒',
-            channelDescription: '星标药品短缺提醒',
+            l10n.starAlertChannelName,
+            channelDescription: l10n.starAlertChannelDesc,
             importance: Importance.high,
             priority: Priority.high,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
       );
     } catch (e) {
@@ -85,6 +88,7 @@ class NotificationService {
   Future<void> scheduleStarredShortage(Medicine medicine,
       {bool notifyIfShort = false}) async {
     if (!_initialized) return;
+    final l10n = lookupAppLocalizations(LocaleService.current);
     final id = _starId(medicine.id);
     try {
       await _plugin.cancel(id);
@@ -117,18 +121,18 @@ class NotificationService {
     try {
       await _plugin.zonedSchedule(
         id,
-        '星标药品短缺',
-        '${medicine.name} 库存即将低于警戒线，请及时补充',
+        l10n.starShortageTitle,
+        l10n.starShortageUpcoming(medicine.name),
         thresholdTz,
-        const NotificationDetails(
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'medicine_star_alert',
-            '星标药品提醒',
-            channelDescription: '星标药品短缺提醒',
+            l10n.starAlertChannelName,
+            channelDescription: l10n.starAlertChannelDesc,
             importance: Importance.high,
             priority: Priority.high,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
@@ -142,6 +146,7 @@ class NotificationService {
   /// 为指定药品预定定时通知（在库存耗尽时触发）
   Future<void> scheduleStockAlert(Medicine medicine) async {
     if (!_initialized) return;
+    final l10n = lookupAppLocalizations(LocaleService.current);
 
     final id = medicine.id.hashCode;
 
@@ -157,17 +162,17 @@ class NotificationService {
     if (remainingDays <= 0) {
       await _plugin.show(
         id,
-        '药品即将用完',
-        '${medicine.name} 库存已不足，请及时补充',
-        const NotificationDetails(
+        l10n.medicineRunningOut,
+        l10n.medicineInsufficient(medicine.name),
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'medicine_alert',
-            '药品提醒',
-            channelDescription: '药品库存不足提醒',
+            l10n.medicineAlertChannelName,
+            channelDescription: l10n.medicineAlertChannelDesc,
             importance: Importance.high,
             priority: Priority.high,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
       );
       return;
@@ -182,18 +187,18 @@ class NotificationService {
 
       await _plugin.zonedSchedule(
         id,
-        '药品即将用完',
-        '${medicine.name} 预计当天用完，请及时补充',
+        l10n.medicineRunningOut,
+        l10n.medicineExpectedOut(medicine.name),
         depletionTz,
-        const NotificationDetails(
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'medicine_alert',
-            '药品提醒',
-            channelDescription: '药品库存不足提醒',
+            l10n.medicineAlertChannelName,
+            channelDescription: l10n.medicineAlertChannelDesc,
             importance: Importance.high,
             priority: Priority.high,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
