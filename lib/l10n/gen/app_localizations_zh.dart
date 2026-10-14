@@ -289,6 +289,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backup => '备用';
 
   @override
+  String get backupBox => '备用药箱';
+
+  @override
   String get starShortageTitle => '星标药品短缺';
 
   @override

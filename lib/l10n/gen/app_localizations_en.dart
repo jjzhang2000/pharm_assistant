@@ -307,6 +307,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backup => 'Backup';
 
   @override
+  String get backupBox => 'Backup box';
+
+  @override
   String get starShortageTitle => 'Starred medicine shortage';
 
   @override

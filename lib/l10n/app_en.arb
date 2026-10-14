@@ -129,6 +129,7 @@
     "placeholders": { "days": { "type": "int" } }
   },
   "backup": "Backup",
+  "backupBox": "Backup box",
 
   "starShortageTitle": "Starred medicine shortage",
   "starShortageBody": "{name} is running low, about {days} days left. Please replenish.",

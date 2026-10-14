@@ -92,6 +92,7 @@
 
   "daysRemaining": "{days} 天",
   "backup": "备用",
+  "backupBox": "备用药箱",
 
   "starShortageTitle": "星标药品短缺",
   "starShortageBody": "{name} 库存不足，剩余约 {days} 天用量，请及时补充",

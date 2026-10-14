@@ -464,7 +464,7 @@ class MedicineDetailScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      box.name,
+                      box.isBackup ? l10n.backupBox : box.name,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(ctx).textTheme.titleMedium,
                     ),

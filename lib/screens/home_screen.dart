@@ -289,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12),
                                     child: Text(
-                                      box.name,
+                                      box.isBackup ? l10n.backupBox : box.name,
                                       style: theme.textTheme.titleMedium
                                           ?.copyWith(
                                         fontWeight: FontWeight.bold,
@@ -509,7 +509,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   transitionBuilder: (child, animation) =>
                       FadeTransition(opacity: animation, child: child),
                   child: Text(
-                    onShortagePage ? l10n.shortagePageTitle : currentBox.name,
+                    onShortagePage
+                        ? l10n.shortagePageTitle
+                        : (currentBox.isBackup
+                            ? l10n.backupBox
+                            : currentBox.name),
                     key: ValueKey(onShortagePage ? 'shortage' : currentBox.id),
                   ),
                 ),
@@ -752,6 +756,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 单个药箱的短缺药品卡片
   Widget _buildShortageCard(
       MedicineBox box, List<Medicine> medicines, ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     final titleColor = onSoftSurface(theme.brightness);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -775,7 +780,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    box.name,
+                    box.isBackup ? l10n.backupBox : box.name,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: titleColor,

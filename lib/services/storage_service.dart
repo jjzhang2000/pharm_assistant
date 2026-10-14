@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../models/medicine.dart';
 import '../models/medicine_box.dart';
+import 'locale_service.dart';
 import 'notification_service.dart';
 
 /// 全局唯一的药品/药箱 JSON 文件存储服务，通过 [ChangeNotifier] 驱动界面刷新
@@ -85,7 +87,7 @@ class StorageService extends ChangeNotifier {
     if (!_boxes.any((b) => b.isBackup)) {
       _boxes.add(MedicineBox(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: '备用药箱',
+        name: lookupAppLocalizations(LocaleService.current).backupBox,
         createdAt: DateTime.now(),
         color: MedicineBox.backupColor,
         isBackup: true,

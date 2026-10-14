@@ -614,6 +614,12 @@ abstract class AppLocalizations {
   /// **'Backup'**
   String get backup;
 
+  /// No description provided for @backupBox.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup box'**
+  String get backupBox;
+
   /// No description provided for @starShortageTitle.
   ///
   /// In en, this message translates to:
