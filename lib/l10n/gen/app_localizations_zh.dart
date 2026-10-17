@@ -91,6 +91,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get about => '关于';
 
   @override
+  String get guide => '使用指南';
+
+  @override
   String versionLabel(String version) {
     return '版本 $version';
   }
@@ -147,12 +150,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get medicineNameRequired => '请输入药品名称';
 
   @override
-  String get lookupTooltip => '联网查询药品信息';
-
-  @override
-  String get scanTooltip => '扫描药盒条码/二维码';
-
-  @override
   String get dosage => '剂量';
 
   @override
@@ -190,44 +187,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get add => '添加';
-
-  @override
-  String get traceCodeUnsupported => '这是药品追溯码，暂无法查询，请手动输入药品名称';
-
-  @override
-  String get barcodeApiNotApplied => '请先在天行数据控制台申请「商品条码查询」接口';
-
-  @override
-  String barcodeLookupFailed(String msg) {
-    return '条码查询失败：$msg';
-  }
-
-  @override
-  String barcodeNotFound(String code) {
-    return '未查到该条码「$code」对应的药品，请手动输入名称';
-  }
-
-  @override
-  String get enterMedicineNameFirst => '请先输入药品名称';
-
-  @override
-  String lookupApplied(String name) {
-    return '已填入「$name」的信息，请核对服用剂量与周期';
-  }
-
-  @override
-  String get lookupNameOnly => '已填入名称，但未查到该药品的说明书，剂量/周期请手动填写';
-
-  @override
-  String lookupFailed(String msg) {
-    return '查询失败：$msg';
-  }
-
-  @override
-  String get scanTitle => '扫描药品条码/二维码';
-
-  @override
-  String get scanHint => '对准药盒上的条码或二维码';
 
   @override
   String get medicineNotFound => '药品不存在';

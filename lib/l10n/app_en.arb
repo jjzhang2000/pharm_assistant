@@ -34,6 +34,7 @@
   "starred": "Starred",
 
   "about": "About",
+  "guide": "User guide",
   "versionLabel": "Version {version}",
   "@versionLabel": {
     "placeholders": { "version": { "type": "String" } }
@@ -56,8 +57,6 @@
   "inventoryInfo": "Inventory",
   "medicineName": "Medicine name",
   "medicineNameRequired": "Please enter the medicine name",
-  "lookupTooltip": "Search medicine online",
-  "scanTooltip": "Scan barcode/QR code",
   "dosage": "Dose",
   "every": "Every",
   "times": "times",
@@ -71,29 +70,6 @@
   "dayReminder": "days reminder",
   "save": "Save",
   "add": "Add",
-  "traceCodeUnsupported": "This is a medicine traceability code and cannot be queried. Please enter the medicine name manually.",
-  "barcodeApiNotApplied": "Please apply for the \"Barcode Query\" API in the Tianxing Data console first.",
-  "barcodeLookupFailed": "Barcode query failed: {msg}",
-  "@barcodeLookupFailed": {
-    "placeholders": { "msg": { "type": "String" } }
-  },
-  "barcodeNotFound": "No medicine found for barcode \"{code}\". Please enter the name manually.",
-  "@barcodeNotFound": {
-    "placeholders": { "code": { "type": "String" } }
-  },
-  "enterMedicineNameFirst": "Please enter the medicine name first.",
-  "lookupApplied": "Information for \"{name}\" has been filled in. Please verify the dosage and period.",
-  "@lookupApplied": {
-    "placeholders": { "name": { "type": "String" } }
-  },
-  "lookupNameOnly": "Filled in the name, but no manual was found. Please enter dosage and period manually.",
-  "lookupFailed": "Query failed: {msg}",
-  "@lookupFailed": {
-    "placeholders": { "msg": { "type": "String" } }
-  },
-
-  "scanTitle": "Scan medicine barcode/QR code",
-  "scanHint": "Align with the barcode or QR code on the medicine package",
 
   "medicineNotFound": "Medicine not found",
   "edit": "Edit",

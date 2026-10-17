@@ -12,9 +12,10 @@
 - **库存预警**：库存不足的药品高亮，列表按星标优先、各自按剩余天数递增排序 + 推送通知提醒
 - **短缺药品负一页**：App 启动默认显示短缺药品页（负一页），星标药品聚合在顶部，其余按药箱分组显示，条目显示「剩余存量 / 剩余天数」
 - **短缺页分享**：负一页 AppBar 右侧「分享」按钮一键生成整页长截图并保存到系统相册，随后提示可在微信、QQ 等应用中分享给好友
-- **关于页面**：负一页 AppBar 右侧「设置」按钮进入关于页，展示应用名称、版本号、版权声明，并在下半部滚动展示版本更新记录
-- **主题切换**：支持亮色/暗色主题（跟随系统 / 亮色 / 暗色），并提供青、蓝、绿、紫四种配色，在「关于」页内即可切换、即时生效并持久保存
-- **多语言支持**：界面文案统一管理，支持简体中文与英文切换；「关于」页「语言」选项（配色之后、版本记录之前）即时切换并持久保存
+- **设置页**：负一页 AppBar 右侧「设置」按钮进入设置页，仅保留主题（明暗模式 + 四色配色）与语言设置
+- **信息页**：负一页 AppBar 右侧「信息」按钮进入信息页，展示版本说明与版权声明，并分栏滚动展示使用指南（中英文）与版本更新记录
+- **主题切换**：支持亮色/暗色主题（跟随系统 / 亮色 / 暗色），并提供青、蓝、绿、紫四种配色，在「设置」页内即可切换、即时生效并持久保存
+- **多语言支持**：界面文案统一管理，支持简体中文与英文切换；「设置」页「语言」选项即时切换并持久保存，使用指南亦随语言切换
 - **快速调整**：在卡片上直接 +/- 调整库存数量
 - **药品移动**：详情页「更多」菜单可把药品移动到其他药箱；长按卡片进入全屏概览，拖动到目标药箱或「新药箱」完成移动
 - **星标药品**：卡片名称下方用星标图标一键标记，星标药品在药箱页与负一页顶部优先展示
@@ -29,11 +30,9 @@
 | Provider | 状态管理 |
 | path_provider | 获取应用文档目录 |
 | flutter_local_notifications | 本地推送通知 |
-| mobile_scanner | 扫描药盒条码/二维码 |
-| http | 药品联网查询（天行数据接口） |
-| material_symbols_icons | Material Symbols 图标 |
 | gal | 保存图片到系统相册（负一页分享长截图） |
 | package_info_plus | 运行时读取应用版本号 |
+| flutter_markdown | 渲染信息页使用指南（Markdown） |
 | intl / flutter_localizations | 国际化（gen-l10n，ARB 资源文件） |
 | JSON 文件 | 数据持久化（`medicines.json`） |
 
@@ -56,15 +55,14 @@ lib/
 ├── services/
 │   ├── storage_service.dart           # JSON 文件读写服务
 │   ├── notification_service.dart      # 推送通知服务
-│   ├── medicine_lookup_service.dart   # 药品联网查询与扫码解析
 │   ├── theme_service.dart             # 主题（明暗/配色）状态管理与持久化
 │   └── locale_service.dart            # 语言偏好状态管理与持久化
 ├── screens/
 │   ├── home_screen.dart               # 首页（多药箱切换 + 短缺药品负一页）
 │   ├── add_edit_medicine_screen.dart   # 添加/编辑药品
 │   ├── medicine_detail_screen.dart    # 药品详情
-│   ├── scan_screen.dart               # 扫码录入
-│   └── about_screen.dart              # 关于页（版本信息与更新记录）
+│   ├── settings_screen.dart           # 设置页（主题 + 语言）
+│   └── info_screen.dart               # 信息页（版本信息、使用指南、更新记录）
 └── widgets/
     ├── medicine_card.dart             # 药品卡片组件
     └── empty_state.dart               # 空状态组件
@@ -102,7 +100,7 @@ APK 输出路径：`build/app/outputs/flutter-apk/app-release.apk`
 
 ## 版本更新记录
 
-版本更新记录以 [assets/changelog.json](assets/changelog.json) 为唯一来源，应用内「关于」页直接读取该文件展示。
+版本更新记录以 [assets/changelog.json](assets/changelog.json) 为唯一来源，应用内「信息」页直接读取该文件展示。
 
 ## 许可证
 

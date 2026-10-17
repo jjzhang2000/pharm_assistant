@@ -1,7 +1,7 @@
 name: pharm_assistant
 description: 小药箱 - 日常药品库存管理
 publish_to: 'none'
-version: 0.6.0+6
+version: 0.6.2+8
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -15,11 +15,9 @@ dependencies:
   flutter_local_notifications: ^17.0.0
   timezone: ^0.9.4
   provider: ^6.1.0
-  http: ^1.2.2
-  mobile_scanner: 6.0.9
-  material_symbols_icons: ^4.2960.0
   gal: ^2.3.3
   package_info_plus: ^10.2.2
+  flutter_markdown: ^0.7.4
   intl: ^0.20.2
 
 dev_dependencies:
@@ -32,3 +30,5 @@ flutter:
   generate: true
   assets:
     - assets/changelog.json
+    - Manual.md
+    - Manual_en.md

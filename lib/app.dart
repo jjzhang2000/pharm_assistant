@@ -5,7 +5,8 @@ import 'l10n/gen/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'screens/add_edit_medicine_screen.dart';
 import 'screens/medicine_detail_screen.dart';
-import 'screens/about_screen.dart';
+import 'screens/info_screen.dart';
+import 'screens/settings_screen.dart';
 import 'services/theme_service.dart';
 import 'services/locale_service.dart';
 
@@ -55,7 +56,8 @@ class MedicineApp extends StatelessWidget {
           final id = ModalRoute.of(context)!.settings.arguments as String;
           return MedicineDetailScreen(medicineId: id);
         },
-        '/about': (context) => const AboutScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/info': (context) => const InfoScreen(),
       },
     );
   }

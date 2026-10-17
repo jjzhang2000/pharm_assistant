@@ -40,11 +40,17 @@ class NotificationService {
 
       await _plugin.initialize(settings);
       _initialized = true;
+      debugPrint('[通知] 初始化成功');
 
       // Android 13+ 需要运行时申请通知权限，否则通知不会显示
       final androidImpl = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
-      await androidImpl?.requestNotificationsPermission();
+      if (androidImpl != null) {
+        final granted = await androidImpl.requestNotificationsPermission();
+        debugPrint('[通知] 权限申请结果: $granted');
+        final enabled = await androidImpl.areNotificationsEnabled();
+        debugPrint('[通知] 通知实际是否开启: $enabled');
+      }
     } catch (e) {
       debugPrint('通知初始化失败: $e');
       _initialized = false;
@@ -53,7 +59,10 @@ class NotificationService {
 
   /// 发送星标药品短缺通知（由 StorageService 在药品转入「星标+短缺」时调用一次）
   Future<void> showStarredShortage(Medicine medicine) async {
-    if (!_initialized) return;
+    if (!_initialized) {
+      debugPrint('[通知] 跳过：通知服务未初始化，无法发送 ${medicine.name} 的短缺通知');
+      return;
+    }
     final l10n = lookupAppLocalizations(LocaleService.current);
     try {
       final remainingDays = medicine.remainingDays.floor();
@@ -87,7 +96,10 @@ class NotificationService {
   /// 作为「后台排期被取消/未送达」的兜底，避免用户打开 App 仍然收不到。
   Future<void> scheduleStarredShortage(Medicine medicine,
       {bool notifyIfShort = false}) async {
-    if (!_initialized) return;
+    if (!_initialized) {
+      debugPrint('[通知] 跳过：通知服务未初始化，无法排期 ${medicine.name}');
+      return;
+    }
     final l10n = lookupAppLocalizations(LocaleService.current);
     final id = _starId(medicine.id);
     try {
@@ -145,7 +157,10 @@ class NotificationService {
 
   /// 为指定药品预定定时通知（在库存耗尽时触发）
   Future<void> scheduleStockAlert(Medicine medicine) async {
-    if (!_initialized) return;
+    if (!_initialized) {
+      debugPrint('[通知] 跳过：通知服务未初始化，无法排期 ${medicine.name}');
+      return;
+    }
     final l10n = lookupAppLocalizations(LocaleService.current);
 
     final id = medicine.id.hashCode;

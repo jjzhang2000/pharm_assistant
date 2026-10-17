@@ -254,6 +254,12 @@ abstract class AppLocalizations {
   /// **'About'**
   String get about;
 
+  /// No description provided for @guide.
+  ///
+  /// In en, this message translates to:
+  /// **'User guide'**
+  String get guide;
+
   /// No description provided for @versionLabel.
   ///
   /// In en, this message translates to:
@@ -362,18 +368,6 @@ abstract class AppLocalizations {
   /// **'Please enter the medicine name'**
   String get medicineNameRequired;
 
-  /// No description provided for @lookupTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Search medicine online'**
-  String get lookupTooltip;
-
-  /// No description provided for @scanTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan barcode/QR code'**
-  String get scanTooltip;
-
   /// No description provided for @dosage.
   ///
   /// In en, this message translates to:
@@ -451,66 +445,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get add;
-
-  /// No description provided for @traceCodeUnsupported.
-  ///
-  /// In en, this message translates to:
-  /// **'This is a medicine traceability code and cannot be queried. Please enter the medicine name manually.'**
-  String get traceCodeUnsupported;
-
-  /// No description provided for @barcodeApiNotApplied.
-  ///
-  /// In en, this message translates to:
-  /// **'Please apply for the \"Barcode Query\" API in the Tianxing Data console first.'**
-  String get barcodeApiNotApplied;
-
-  /// No description provided for @barcodeLookupFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Barcode query failed: {msg}'**
-  String barcodeLookupFailed(String msg);
-
-  /// No description provided for @barcodeNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'No medicine found for barcode \"{code}\". Please enter the name manually.'**
-  String barcodeNotFound(String code);
-
-  /// No description provided for @enterMedicineNameFirst.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter the medicine name first.'**
-  String get enterMedicineNameFirst;
-
-  /// No description provided for @lookupApplied.
-  ///
-  /// In en, this message translates to:
-  /// **'Information for \"{name}\" has been filled in. Please verify the dosage and period.'**
-  String lookupApplied(String name);
-
-  /// No description provided for @lookupNameOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Filled in the name, but no manual was found. Please enter dosage and period manually.'**
-  String get lookupNameOnly;
-
-  /// No description provided for @lookupFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Query failed: {msg}'**
-  String lookupFailed(String msg);
-
-  /// No description provided for @scanTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan medicine barcode/QR code'**
-  String get scanTitle;
-
-  /// No description provided for @scanHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Align with the barcode or QR code on the medicine package'**
-  String get scanHint;
 
   /// No description provided for @medicineNotFound.
   ///

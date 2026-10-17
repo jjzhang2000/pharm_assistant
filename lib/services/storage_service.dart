@@ -181,6 +181,9 @@ class StorageService extends ChangeNotifier {
     final notifier = NotificationService();
     for (final medicine in _medicines) {
       if (isBackupBox(medicine.boxId)) continue;
+      debugPrint(
+          '[提醒] ${medicine.name}: 星标=${medicine.isStarred} 已短缺=${medicine.needsAlert} '
+          '剩余天数=${medicine.remainingDays} 阈值=${medicine.alertThreshold}');
       notifier.scheduleStockAlert(medicine);
       notifier.scheduleStarredShortage(medicine, notifyIfShort: true);
     }

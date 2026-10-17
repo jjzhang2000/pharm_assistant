@@ -99,6 +99,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get about => 'About';
 
   @override
+  String get guide => 'User guide';
+
+  @override
   String versionLabel(String version) {
     return 'Version $version';
   }
@@ -155,12 +158,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get medicineNameRequired => 'Please enter the medicine name';
 
   @override
-  String get lookupTooltip => 'Search medicine online';
-
-  @override
-  String get scanTooltip => 'Scan barcode/QR code';
-
-  @override
   String get dosage => 'Dose';
 
   @override
@@ -198,48 +195,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get add => 'Add';
-
-  @override
-  String get traceCodeUnsupported =>
-      'This is a medicine traceability code and cannot be queried. Please enter the medicine name manually.';
-
-  @override
-  String get barcodeApiNotApplied =>
-      'Please apply for the \"Barcode Query\" API in the Tianxing Data console first.';
-
-  @override
-  String barcodeLookupFailed(String msg) {
-    return 'Barcode query failed: $msg';
-  }
-
-  @override
-  String barcodeNotFound(String code) {
-    return 'No medicine found for barcode \"$code\". Please enter the name manually.';
-  }
-
-  @override
-  String get enterMedicineNameFirst => 'Please enter the medicine name first.';
-
-  @override
-  String lookupApplied(String name) {
-    return 'Information for \"$name\" has been filled in. Please verify the dosage and period.';
-  }
-
-  @override
-  String get lookupNameOnly =>
-      'Filled in the name, but no manual was found. Please enter dosage and period manually.';
-
-  @override
-  String lookupFailed(String msg) {
-    return 'Query failed: $msg';
-  }
-
-  @override
-  String get scanTitle => 'Scan medicine barcode/QR code';
-
-  @override
-  String get scanHint =>
-      'Align with the barcode or QR code on the medicine package';
 
   @override
   String get medicineNotFound => 'Medicine not found';

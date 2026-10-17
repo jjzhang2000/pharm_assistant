@@ -520,15 +520,36 @@ class _HomeScreenState extends State<HomeScreen> {
                 actions: [
                   if (onShortagePage) ...[
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints.tightFor(width: 32, height: 32),
+                      style: IconButton.styleFrom(
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                       tooltip: l10n.shareShortageTooltip,
                       icon: const Icon(Icons.share_outlined),
                       onPressed: _shareShortage,
                     ),
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints.tightFor(width: 32, height: 32),
+                      style: IconButton.styleFrom(
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                       tooltip: l10n.settings,
                       icon: const Icon(Icons.settings_outlined),
                       onPressed: () =>
-                          Navigator.pushNamed(context, '/about'),
+                          Navigator.pushNamed(context, '/settings'),
+                    ),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints.tightFor(width: 32, height: 32),
+                      style: IconButton.styleFrom(
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                      tooltip: l10n.about,
+                      icon: const Icon(Icons.info_outline),
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/info'),
                     ),
                   ] else
                     PopupMenuButton<_BoxAction>(
