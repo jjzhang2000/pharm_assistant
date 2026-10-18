@@ -302,6 +302,12 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get language;
 
+  /// No description provided for @quickAddStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick add stock'**
+  String get quickAddStock;
+
   /// No description provided for @colorTeal.
   ///
   /// In en, this message translates to:

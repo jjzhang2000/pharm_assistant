@@ -57,7 +57,7 @@ Tap **Add** at the bottom to save.
 Two ways:
 
 1. **On the medicine card**: tap the **－／＋** buttons below the card to decrease or increase stock by 1.
-2. **In the details page**: there are **－1、＋1、＋10、＋50** buttons at the bottom, handy for restocking a whole box or using up a whole bottle quickly.
+2. **In the details page**: there are **－1、＋1** buttons plus two quick-add buttons **＋28、＋100** (changeable to **＋10、＋50** in Settings), handy for restocking a whole box or using up a whole bottle quickly.
 
 The remaining days update immediately after adjusting.
 
@@ -132,13 +132,14 @@ Little Medicine Box reminds you to restock in two situations:
 
 ---
 
-## 10. Settings (theme and language)
+## 10. Settings
 
 How to open: the **gear icon** in the top-right of the shortage page.
 
 Here you can:
 
 - **Theme**: choose "System" / "Light" / "Dark" and one of four accent colors (Teal / Blue / Green / Purple).
+- **Quick add stock**: choose the two quick-add button increments in the details page (+10/+50 or +28/+100).
 - **Language**: 中文 / English, takes effect immediately.
 
 ---

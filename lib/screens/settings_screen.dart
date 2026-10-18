@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/gen/app_localizations.dart';
 import '../services/locale_service.dart';
+import '../services/quick_add_service.dart';
 import '../services/theme_service.dart';
 
 /// 设置页：仅提供主题（配色）与语言设置
@@ -21,6 +22,8 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           _buildThemeSection(context, theme, themeService),
+          const SizedBox(height: 12),
+          _buildQuickAddSection(context, theme),
           const SizedBox(height: 12),
           _buildLanguageSection(context, theme),
         ],
@@ -78,6 +81,48 @@ class SettingsScreen extends StatelessWidget {
                 for (var i = 0; i < ThemeService.seedOptions.length; i++)
                   _buildColorSwatch(theme, ts, i, colorLabels[i]),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 快速增加库存设置卡片：+10/50 或 +28/100
+  Widget _buildQuickAddSection(BuildContext context, ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
+    final quickAdd = context.watch<QuickAddService>();
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.add_box_outlined,
+                    size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.quickAddStock,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(value: 0, label: Text('+10/50')),
+                ButtonSegment(value: 1, label: Text('+28/100')),
+              ],
+              selected: {quickAdd.index},
+              onSelectionChanged: (s) => quickAdd.setPreset(s.first),
+              showSelectedIcon: false,
             ),
           ],
         ),

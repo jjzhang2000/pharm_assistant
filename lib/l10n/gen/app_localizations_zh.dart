@@ -117,6 +117,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get language => '语言';
 
   @override
+  String get quickAddStock => '快速增加库存';
+
+  @override
   String get colorTeal => '青';
 
   @override

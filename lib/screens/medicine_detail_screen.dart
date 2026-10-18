@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../l10n/unit_labels.dart';
 import '../models/medicine.dart';
+import '../services/quick_add_service.dart';
 import '../services/storage_service.dart';
 
 /// 药品详情页：展示库存与用药计划，提供编辑、移动、删除等操作
@@ -287,6 +288,7 @@ class MedicineDetailScreen extends StatelessWidget {
   Widget _buildQuickAdjust(
       BuildContext context, StorageService storage, Medicine medicine) {
     final theme = Theme.of(context);
+    final quickAdd = context.watch<QuickAddService>();
     return Row(
       children: [
         Expanded(
@@ -334,7 +336,7 @@ class MedicineDetailScreen extends StatelessWidget {
           child: FilledButton(
             onPressed: () {
               final updated = medicine.copyWith(
-                currentStock: medicine.currentStock + 28,
+                currentStock: medicine.currentStock + quickAdd.small,
                 updatedAt: DateTime.now(),
                 lastStockUpdate: DateTime.now(),
               );
@@ -345,7 +347,7 @@ class MedicineDetailScreen extends StatelessWidget {
               backgroundColor: theme.colorScheme.primaryContainer,
               foregroundColor: theme.colorScheme.onPrimaryContainer,
             ),
-            child: const Text('+28'),
+            child: Text('+${quickAdd.small}'),
           ),
         ),
         const SizedBox(width: 12),
@@ -354,7 +356,7 @@ class MedicineDetailScreen extends StatelessWidget {
           child: FilledButton(
             onPressed: () {
               final updated = medicine.copyWith(
-                currentStock: medicine.currentStock + 100,
+                currentStock: medicine.currentStock + quickAdd.large,
                 updatedAt: DateTime.now(),
                 lastStockUpdate: DateTime.now(),
               );
@@ -365,7 +367,7 @@ class MedicineDetailScreen extends StatelessWidget {
               backgroundColor: theme.colorScheme.primaryContainer,
               foregroundColor: theme.colorScheme.onPrimaryContainer,
             ),
-            child: const Text('+100'),
+            child: Text('+${quickAdd.large}'),
           ),
         ),
       ],
