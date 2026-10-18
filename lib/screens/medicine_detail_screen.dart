@@ -334,7 +334,7 @@ class MedicineDetailScreen extends StatelessWidget {
           child: FilledButton(
             onPressed: () {
               final updated = medicine.copyWith(
-                currentStock: medicine.currentStock + 10,
+                currentStock: medicine.currentStock + 28,
                 updatedAt: DateTime.now(),
                 lastStockUpdate: DateTime.now(),
               );
@@ -345,7 +345,7 @@ class MedicineDetailScreen extends StatelessWidget {
               backgroundColor: theme.colorScheme.primaryContainer,
               foregroundColor: theme.colorScheme.onPrimaryContainer,
             ),
-            child: const Text('+10'),
+            child: const Text('+28'),
           ),
         ),
         const SizedBox(width: 12),
@@ -354,7 +354,7 @@ class MedicineDetailScreen extends StatelessWidget {
           child: FilledButton(
             onPressed: () {
               final updated = medicine.copyWith(
-                currentStock: medicine.currentStock + 50,
+                currentStock: medicine.currentStock + 100,
                 updatedAt: DateTime.now(),
                 lastStockUpdate: DateTime.now(),
               );
@@ -365,7 +365,7 @@ class MedicineDetailScreen extends StatelessWidget {
               backgroundColor: theme.colorScheme.primaryContainer,
               foregroundColor: theme.colorScheme.onPrimaryContainer,
             ),
-            child: const Text('+50'),
+            child: const Text('+100'),
           ),
         ),
       ],
