@@ -1,4 +1,4 @@
-package com.medicine.pharm_assistant
+package com.artozi.pharm_assistant
 
 import io.flutter.embedding.android.FlutterActivity
 

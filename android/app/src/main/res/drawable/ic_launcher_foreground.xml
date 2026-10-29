@@ -4,8 +4,20 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 胶囊形状 -->
+    <!-- 提手 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M46,34 h16 c8,0 8,20 0,20 h-16 c-8,0 -8,-20 0,-20 z"/>
+        android:pathData="M53,30 L55,30 Q61,30 61,36 L61,42 L47,42 L47,36 Q47,30 53,30 Z"/>
+    <!-- 箱体 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,42 L70,42 Q78,42 78,50 L78,68 Q78,76 70,76 L38,76 Q30,76 30,68 L30,50 Q30,42 38,42 Z"/>
+    <!-- 十字（竖向） -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M52,47 L56,47 Q59,47 59,50 L59,68 Q59,71 56,71 L52,71 Q49,71 49,68 L49,50 Q49,47 52,47 Z"/>
+    <!-- 十字（横向） -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M45,54 L63,54 Q66,54 66,57 L66,61 Q66,64 63,64 L45,64 Q42,64 42,61 L42,57 Q42,54 45,54 Z"/>
 </vector>

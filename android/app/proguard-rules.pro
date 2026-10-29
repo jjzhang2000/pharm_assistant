@@ -6,7 +6,7 @@
 -keep class com.dexterous.** { *; }
 
 # Keep custom application class
--keep class com.medicine.pharm_assistant.** { *; }
+-keep class com.artozi.pharm_assistant.** { *; }
 
 # Prevent R8 from stripping drawable resources used by notification plugin
 -keep class androidx.core.app.NotificationCompat { *; }
