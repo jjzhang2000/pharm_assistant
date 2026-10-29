@@ -94,6 +94,16 @@ flutter build apk --release
 
 APK 输出路径：`build/app/outputs/flutter-apk/app-release.apk`
 
+### 构建 App Bundle（上架 Google Play）
+
+```bash
+flutter build appbundle --release
+```
+
+AAB 输出路径：`build/app/outputs/bundle/release/app-release.aab`
+
+应用包名（applicationId / namespace）为 `com.artozi.pharm_assistant`。Release 构建使用正式签名：密钥库 `android/app/upload-keystore.jks`（别名 `upload`）+ 配置 `android/key.properties`，两者均已加入 `.gitignore`，不会提交到仓库。
+
 ## 数据存储
 
 药箱与药品数据存储在应用文档目录下的 `medicines.json` 文件中，格式为 `{ "boxes": [...], "medicines": [...] }`。个人用药数量通常较少（< 10 种），全量读写性能完全足够，无需数据库。库存数值统一舍入到 2 位小数存储，避免浮点误差。
@@ -104,4 +114,4 @@ APK 输出路径：`build/app/outputs/flutter-apk/app-release.apk`
 
 ## 许可证
 
-个人项目，仅供学习使用。
+本项目基于 [MIT 许可证](https://opensource.org/licenses/MIT) 开源，版权所有 © 2026 Eddie J. Zhang。

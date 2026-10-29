@@ -1,6 +1,7 @@
 # Flutter
 .dart_tool/
 .packages
+.flutter-plugins-dependencies
 build/
 *.iml
 .idea/
@@ -17,10 +18,14 @@ android/local.properties
 android/key.properties
 *.jks
 *.keystore
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 
 # iOS
 ios/Pods/
 ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Flutter/flutter_export_environment.sh
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/Runner/GeneratedPluginRegistrant.h
@@ -54,3 +59,14 @@ android/.kotlin/
 
 # Windows ephemeral backup
 windows/flutter/ephemeral_bak/
+
+# Agent instructions (local only, not for repo)
+AGENTS.md
+
+# Trae IDE (local)
+.trae/
+
+# Windows generated plugin registrant
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
