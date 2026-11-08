@@ -125,9 +125,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get language => 'Language';
 
   @override
-  String get quickAddStock => 'Quick add stock';
-
-  @override
   String get colorTeal => 'Teal';
 
   @override
@@ -223,6 +220,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String frequencyValue(String value, String unit, String times) {
     return 'Every $value $unit $times times';
+  }
+
+  @override
+  String scheduleWeekly(String value, String weekday, String time) {
+    return 'Every $value weeks on $weekday at $time';
+  }
+
+  @override
+  String scheduleWeeklySingle(String weekday, String time) {
+    return 'Every week on $weekday at $time';
+  }
+
+  @override
+  String scheduleMonthly(String value, String day, String time) {
+    return 'Every $value months on day $day at $time';
+  }
+
+  @override
+  String scheduleMonthlySingle(String day, String time) {
+    return 'Every month on day $day at $time';
   }
 
   @override
@@ -327,6 +344,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitDrop => 'drop';
 
   @override
+  String get unitBox => 'box';
+
+  @override
   String get unitDay => 'day';
 
   @override
@@ -334,4 +354,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unitMonth => 'month';
+
+  @override
+  String get weekdayMon => 'Mon';
+
+  @override
+  String get weekdayTue => 'Tue';
+
+  @override
+  String get weekdayWed => 'Wed';
+
+  @override
+  String get weekdayThu => 'Thu';
+
+  @override
+  String get weekdayFri => 'Fri';
+
+  @override
+  String get weekdaySat => 'Sat';
+
+  @override
+  String get weekdaySun => 'Sun';
 }

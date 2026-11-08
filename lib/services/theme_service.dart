@@ -24,12 +24,10 @@ class ThemeService extends ChangeNotifier {
 
   ThemeMode _mode = ThemeMode.system;
   int _seedIndex = 0;
-  bool _loaded = false;
 
   ThemeMode get mode => _mode;
   int get seedIndex => _seedIndex;
   Color get seedColor => seedOptions[_seedIndex].seed;
-  bool get loaded => _loaded;
 
   Future<File> _file() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -52,7 +50,6 @@ class ThemeService extends ChangeNotifier {
     } catch (e) {
       debugPrint('加载主题设置失败: $e');
     }
-    _loaded = true;
     notifyListeners();
   }
 

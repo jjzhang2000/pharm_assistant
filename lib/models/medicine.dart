@@ -7,6 +7,10 @@ class Medicine {
   final double dosageStrength;
   final String dosageStrengthUnit;
   final String form;
+  /// 一个包装（每盒/每瓶）的数量（整数，如 28 粒/盒；0 表示未设置）
+  final int packageSize;
+  /// 每次采购的单位（盒/瓶）；空串表示未设置
+  final String packageUnit;
   final int periodValue;
   final String periodUnit;
   final int timesPerPeriod;
@@ -36,6 +40,8 @@ class Medicine {
     required this.dosageStrength,
     required this.dosageStrengthUnit,
     required this.form,
+    this.packageSize = 0,
+    this.packageUnit = '',
     required this.periodValue,
     required this.periodUnit,
     required this.timesPerPeriod,
@@ -363,6 +369,8 @@ class Medicine {
       dosageStrength: (json['dosageStrength'] as num?)?.toDouble() ?? 0,
       dosageStrengthUnit: json['dosageStrengthUnit'] as String? ?? '',
       form: json['form'] as String? ?? json['dosageUnit'] as String? ?? '片',
+      packageSize: json['packageSize'] as int? ?? 0,
+      packageUnit: json['packageUnit'] as String? ?? '',
       periodValue: json['periodValue'] as int? ?? 1,
       periodUnit: unit,
       timesPerPeriod: json['timesPerPeriod'] as int? ?? json['timesPerDay'] as int? ?? 1,
@@ -402,6 +410,8 @@ class Medicine {
       'dosageStrength': dosageStrength,
       'dosageStrengthUnit': dosageStrengthUnit,
       'form': form,
+      'packageSize': packageSize,
+      'packageUnit': packageUnit,
       'periodValue': periodValue,
       'periodUnit': periodUnit,
       'timesPerPeriod': timesPerPeriod,
@@ -429,6 +439,8 @@ class Medicine {
     double? dosageStrength,
     String? dosageStrengthUnit,
     String? form,
+    int? packageSize,
+    String? packageUnit,
     int? periodValue,
     String? periodUnit,
     int? timesPerPeriod,
@@ -451,6 +463,8 @@ class Medicine {
       dosageStrength: dosageStrength ?? this.dosageStrength,
       dosageStrengthUnit: dosageStrengthUnit ?? this.dosageStrengthUnit,
       form: form ?? this.form,
+      packageSize: packageSize ?? this.packageSize,
+      packageUnit: packageUnit ?? this.packageUnit,
       periodValue: periodValue ?? this.periodValue,
       periodUnit: periodUnit ?? this.periodUnit,
       timesPerPeriod: timesPerPeriod ?? this.timesPerPeriod,

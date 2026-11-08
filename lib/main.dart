@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'services/storage_service.dart';
 import 'services/theme_service.dart';
 import 'services/locale_service.dart';
-import 'services/quick_add_service.dart';
 import 'services/notification_service.dart';
 import 'app.dart';
 
@@ -14,12 +13,10 @@ void main() async {
   final storageService = StorageService();
   final themeService = ThemeService();
   final localeService = LocaleService();
-  final quickAddService = QuickAddService();
   await Future.wait([
     storageService.load(),
     themeService.load(),
     localeService.load(),
-    quickAddService.load(),
   ]);
 
   try {
@@ -40,7 +37,6 @@ void main() async {
         ChangeNotifierProvider.value(value: storageService),
         ChangeNotifierProvider.value(value: themeService),
         ChangeNotifierProvider.value(value: localeService),
-        ChangeNotifierProvider.value(value: quickAddService),
       ],
       child: const MedicineApp(),
     ),

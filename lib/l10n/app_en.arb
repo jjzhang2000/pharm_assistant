@@ -45,7 +45,6 @@
   "light": "Light",
   "dark": "Dark",
   "language": "Language",
-  "quickAddStock": "Quick add stock",
   "colorTeal": "Teal",
   "colorBlue": "Blue",
   "colorGreen": "Green",
@@ -85,6 +84,36 @@
       "value": { "type": "String" },
       "unit": { "type": "String" },
       "times": { "type": "String" }
+    }
+  },
+  "scheduleWeekly": "Every {value} weeks on {weekday} at {time}",
+  "@scheduleWeekly": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "weekday": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "scheduleWeeklySingle": "Every week on {weekday} at {time}",
+  "@scheduleWeeklySingle": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "scheduleMonthly": "Every {value} months on day {day} at {time}",
+  "@scheduleMonthly": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "day": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "scheduleMonthlySingle": "Every month on day {day} at {time}",
+  "@scheduleMonthlySingle": {
+    "placeholders": {
+      "day": { "type": "String" },
+      "time": { "type": "String" }
     }
   },
   "dosePerTimeLabel": "Dose per time",
@@ -141,7 +170,15 @@
   "unitBottle": "bottle",
   "unitVial": "vial",
   "unitDrop": "drop",
+  "unitBox": "box",
   "unitDay": "day",
   "unitWeek": "week",
-  "unitMonth": "month"
+  "unitMonth": "month",
+  "weekdayMon": "Mon",
+  "weekdayTue": "Tue",
+  "weekdayWed": "Wed",
+  "weekdayThu": "Thu",
+  "weekdayFri": "Fri",
+  "weekdaySat": "Sat",
+  "weekdaySun": "Sun"
 }

@@ -10,10 +10,8 @@ class LocaleService extends ChangeNotifier {
   static Locale current = const Locale('zh');
 
   Locale _locale = const Locale('zh');
-  bool _loaded = false;
 
   Locale get locale => _locale;
-  bool get loaded => _loaded;
 
   Future<File> _file() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -32,7 +30,6 @@ class LocaleService extends ChangeNotifier {
       debugPrint('加载语言设置失败: $e');
     }
     current = _locale;
-    _loaded = true;
     notifyListeners();
   }
 

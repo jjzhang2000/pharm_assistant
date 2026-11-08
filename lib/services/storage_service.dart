@@ -10,6 +10,15 @@ import '../models/medicine_box.dart';
 import 'locale_service.dart';
 import 'notification_service.dart';
 
+/// 自增序号，配合时间戳生成全局唯一 ID，避免同一毫秒内连续创建多个对象导致 ID 冲突
+int _idSeq = 0;
+
+/// 生成全局唯一 ID（微秒时间戳 + 自增序号）
+String generateId() {
+  _idSeq++;
+  return '${DateTime.now().microsecondsSinceEpoch}_$_idSeq';
+}
+
 /// 全局唯一的药品/药箱 JSON 文件存储服务，通过 [ChangeNotifier] 驱动界面刷新
 class StorageService extends ChangeNotifier {
   List<MedicineBox> _boxes = [];
@@ -75,7 +84,7 @@ class StorageService extends ChangeNotifier {
     var migrated = false;
     if (_boxes.isEmpty) {
       _boxes.add(MedicineBox(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: generateId(),
         name: '小药箱',
         createdAt: DateTime.now(),
         color: MedicineBox.boxPalette.first,
@@ -86,7 +95,7 @@ class StorageService extends ChangeNotifier {
     // 确保存在备用药箱（只记录存量、不自动扣减、不参与短缺统计）
     if (!_boxes.any((b) => b.isBackup)) {
       _boxes.add(MedicineBox(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: generateId(),
         name: lookupAppLocalizations(LocaleService.current).backupBox,
         createdAt: DateTime.now(),
         color: MedicineBox.backupColor,
@@ -104,6 +113,23 @@ class StorageService extends ChangeNotifier {
         _boxes.asMap().entries.any((e) => e.value.id != reordered[e.key].id);
     _boxes = reordered;
     if (orderChanged) migrated = true;
+
+    // 修复历史数据中的重复药箱 ID（旧版本在同一毫秒内创建默认药箱与备用药箱，
+    // 导致两者 id 相同、药品同时出现在两个药箱）：保留首个，其余重新生成。
+    final seenIds = <String>{};
+    for (int i = 0; i < _boxes.length; i++) {
+      final b = _boxes[i];
+      if (b.id.isEmpty || !seenIds.add(b.id)) {
+        _boxes[i] = MedicineBox(
+          id: generateId(),
+          name: b.name,
+          createdAt: b.createdAt,
+          color: b.color,
+          isBackup: b.isBackup,
+        );
+        migrated = true;
+      }
+    }
 
     final defaultBoxId = _boxes.first.id;
 
@@ -207,7 +233,7 @@ class StorageService extends ChangeNotifier {
   Future<MedicineBox> addBox(String name) async {
     final usedColors = _boxes.map((b) => b.color).toSet();
     final box = MedicineBox(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: generateId(),
       name: name,
       createdAt: DateTime.now(),
       color: MedicineBox.nextColor(usedColors),

@@ -117,9 +117,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get language => '语言';
 
   @override
-  String get quickAddStock => '快速增加库存';
-
-  @override
   String get colorTeal => '青';
 
   @override
@@ -218,6 +215,26 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String scheduleWeekly(String value, String weekday, String time) {
+    return '每$value周$weekday $time';
+  }
+
+  @override
+  String scheduleWeeklySingle(String weekday, String time) {
+    return '每周$weekday $time';
+  }
+
+  @override
+  String scheduleMonthly(String value, String day, String time) {
+    return '每$value月$day日 $time';
+  }
+
+  @override
+  String scheduleMonthlySingle(String day, String time) {
+    return '每月$day日 $time';
+  }
+
+  @override
   String get dosePerTimeLabel => '每次剂量';
 
   @override
@@ -313,6 +330,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get unitDrop => '滴';
 
   @override
+  String get unitBox => '盒';
+
+  @override
   String get unitDay => '天';
 
   @override
@@ -320,4 +340,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get unitMonth => '月';
+
+  @override
+  String get weekdayMon => '一';
+
+  @override
+  String get weekdayTue => '二';
+
+  @override
+  String get weekdayWed => '三';
+
+  @override
+  String get weekdayThu => '四';
+
+  @override
+  String get weekdayFri => '五';
+
+  @override
+  String get weekdaySat => '六';
+
+  @override
+  String get weekdaySun => '日';
 }

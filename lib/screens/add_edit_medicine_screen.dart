@@ -23,6 +23,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _dosageStrengthController;
+  late final TextEditingController _packageSizeController;
   late final TextEditingController _periodValueController;
   late final TextEditingController _timesPerPeriodController;
   late final TextEditingController _dosagePerTimeController;
@@ -31,6 +32,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
   late String _dosageStrengthUnit;
   late String _form;
+  late String _packageUnit;
   late String _periodUnit;
 
   /// 服用时间安排：天-小时(0-23)。周/月用 [_nextRoundDates]
@@ -44,6 +46,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
   final List<String> _strengthUnits = ['mg', 'g', 'ml', 'IU', 'mcg'];
   final List<String> _forms = ['片', '粒', '胶囊', '包', '瓶', '支', '滴'];
+  final List<String> _packageUnits = ['盒', '瓶'];
   final List<String> _periodUnits = ['天', '周', '月'];
 
   @override
@@ -51,6 +54,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     super.initState();
     _nameController = TextEditingController();
     _dosageStrengthController = TextEditingController();
+    _packageSizeController = TextEditingController();
     _periodValueController = TextEditingController(text: '1');
     _timesPerPeriodController = TextEditingController(text: '1');
     _dosagePerTimeController = TextEditingController(text: '1');
@@ -59,6 +63,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
     _dosageStrengthUnit = 'mg';
     _form = '片';
+    _packageUnit = '盒';
     _periodUnit = '天';
 
     _syncSlotsToCount();
@@ -79,6 +84,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           ? medicine.dosageStrengthUnit
           : 'mg';
       _form = medicine.form;
+      _packageSizeController.text =
+          medicine.packageSize > 0 ? medicine.packageSize.toString() : '';
+      _packageUnit =
+          medicine.packageUnit.isNotEmpty ? medicine.packageUnit : '盒';
       _periodValueController.text = medicine.periodValue.toString();
       _periodUnit = medicine.periodUnit;
       _timesPerPeriodController.text = medicine.timesPerPeriod.toString();
@@ -144,6 +153,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   void dispose() {
     _nameController.dispose();
     _dosageStrengthController.dispose();
+    _packageSizeController.dispose();
     _periodValueController.dispose();
     _timesPerPeriodController.dispose();
     _dosagePerTimeController.dispose();
@@ -164,6 +174,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     final dosage = double.tryParse(_dosagePerTimeController.text) ?? 0;
     final stock = double.tryParse(_stockController.text) ?? 0;
     final threshold = double.tryParse(_thresholdController.text) ?? 7;
+    final packageSize = int.tryParse(_packageSizeController.text) ?? 0;
 
     // 服用时间安排：同步到当前服用次数，优先以具体时刻/日期精确扣减
     _syncSlotsToCount();
@@ -183,6 +194,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         dosageStrength: strength,
         dosageStrengthUnit: _dosageStrengthUnit,
         form: _form,
+        packageSize: packageSize,
+        packageUnit: _packageUnit,
         periodValue: periodVal,
         periodUnit: _periodUnit,
         timesPerPeriod: times,
@@ -200,11 +213,13 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       await storage.update(updated);
     } else {
       final medicine = Medicine(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: generateId(),
         name: _nameController.text.trim(),
         dosageStrength: strength,
         dosageStrengthUnit: _dosageStrengthUnit,
         form: _form,
+        packageSize: packageSize,
+        packageUnit: _packageUnit,
         periodValue: periodVal,
         periodUnit: _periodUnit,
         timesPerPeriod: times,
@@ -294,6 +309,18 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       labelFor: (e) => formLabel(l10n, e),
       onChanged: (v) {
         if (v != null) setState(() => _form = v);
+      },
+    );
+  }
+
+  Widget _packageUnitDropdown() {
+    final l10n = AppLocalizations.of(context);
+    return _buildDropdown(
+      value: _packageUnit,
+      items: _packageUnits,
+      labelFor: (e) => packageUnitLabel(l10n, e),
+      onChanged: (v) {
+        if (v != null) setState(() => _packageUnit = v);
       },
     );
   }
@@ -500,6 +527,32 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           const Text('/'),
                           const SizedBox(width: 8),
                           _formDropdown(),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.inventory_2_outlined, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _packageSizeController,
+                              keyboardType: TextInputType.number,
+                              decoration: _decoration(hintText: l10n.quantity),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return null;
+                                final n = int.tryParse(v.trim());
+                                if (n == null || n <= 0) return ' ';
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _formDropdown(),
+                          const SizedBox(width: 8),
+                          const Text('/'),
+                          const SizedBox(width: 8),
+                          _packageUnitDropdown(),
                         ],
                       ),
                     ],

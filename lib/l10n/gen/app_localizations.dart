@@ -302,12 +302,6 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get language;
 
-  /// No description provided for @quickAddStock.
-  ///
-  /// In en, this message translates to:
-  /// **'Quick add stock'**
-  String get quickAddStock;
-
   /// No description provided for @colorTeal.
   ///
   /// In en, this message translates to:
@@ -500,6 +494,30 @@ abstract class AppLocalizations {
   /// **'Every {value} {unit} {times} times'**
   String frequencyValue(String value, String unit, String times);
 
+  /// No description provided for @scheduleWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every {value} weeks on {weekday} at {time}'**
+  String scheduleWeekly(String value, String weekday, String time);
+
+  /// No description provided for @scheduleWeeklySingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Every week on {weekday} at {time}'**
+  String scheduleWeeklySingle(String weekday, String time);
+
+  /// No description provided for @scheduleMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every {value} months on day {day} at {time}'**
+  String scheduleMonthly(String value, String day, String time);
+
+  /// No description provided for @scheduleMonthlySingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Every month on day {day} at {time}'**
+  String scheduleMonthlySingle(String day, String time);
+
   /// No description provided for @dosePerTimeLabel.
   ///
   /// In en, this message translates to:
@@ -662,6 +680,12 @@ abstract class AppLocalizations {
   /// **'drop'**
   String get unitDrop;
 
+  /// No description provided for @unitBox.
+  ///
+  /// In en, this message translates to:
+  /// **'box'**
+  String get unitBox;
+
   /// No description provided for @unitDay.
   ///
   /// In en, this message translates to:
@@ -679,6 +703,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'month'**
   String get unitMonth;
+
+  /// No description provided for @weekdayMon.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get weekdayMon;
+
+  /// No description provided for @weekdayTue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get weekdayTue;
+
+  /// No description provided for @weekdayWed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get weekdayWed;
+
+  /// No description provided for @weekdayThu.
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get weekdayThu;
+
+  /// No description provided for @weekdayFri.
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get weekdayFri;
+
+  /// No description provided for @weekdaySat.
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get weekdaySat;
+
+  /// No description provided for @weekdaySun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get weekdaySun;
 }
 
 class _AppLocalizationsDelegate

@@ -28,6 +28,7 @@ On any box page, tap the round **＋** button in the bottom-right corner to add 
 ### 1. Medicine info
 - **Medicine name** (required).
 - **Dose**: enter a number, then choose the unit and form (e.g. "500 mg / tablet").
+- **Package size (optional)**: enter how many units are in one box/bottle (e.g. 28) and the purchase unit (box/bottle), shown as "28 tablets / box". Once set, the details page shows a "＋1 box / ＋1 bottle" quick-restock button.
 
 ### 2. Schedule
 - **Every X days/weeks/months, N times**: e.g. "2 times a day", "once a week".
@@ -57,7 +58,7 @@ Tap **Add** at the bottom to save.
 Two ways:
 
 1. **On the medicine card**: tap the **－／＋** buttons below the card to decrease or increase stock by 1.
-2. **In the details page**: there are **－1、＋1** buttons plus two quick-add buttons **＋28、＋100** (changeable to **＋10、＋50** in Settings), handy for restocking a whole box or using up a whole bottle quickly.
+2. **In the details page**: there are **−1、＋1** buttons (the label shows the unit, e.g. "−1 tablet" / "＋1 tablet"); if the medicine has a package size set, there is also a **＋1 box** (or **＋1 bottle**) button to add one whole package at once.
 
 The remaining days update immediately after adjusting.
 
@@ -139,7 +140,6 @@ How to open: the **gear icon** in the top-right of the shortage page.
 Here you can:
 
 - **Theme**: choose "System" / "Light" / "Dark" and one of four accent colors (Teal / Blue / Green / Purple).
-- **Quick add stock**: choose the two quick-add button increments in the details page (+10/+50 or +28/+100).
 - **Language**: 中文 / English, takes effect immediately.
 
 ---

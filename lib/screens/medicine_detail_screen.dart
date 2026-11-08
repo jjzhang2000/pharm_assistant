@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../l10n/unit_labels.dart';
 import '../models/medicine.dart';
-import '../services/quick_add_service.dart';
 import '../services/storage_service.dart';
 
 /// 药品详情页：展示库存与用药计划，提供编辑、移动、删除等操作
@@ -205,6 +204,19 @@ class MedicineDetailScreen extends StatelessWidget {
                   label: l10n.spec,
                   value: '${medicine.dosageStrength.toInt()} ${medicine.dosageStrengthUnit} / ${formLabel(l10n, medicine.form)}',
                 ),
+                if (medicine.packageSize > 0)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${medicine.packageSize} ${formLabel(l10n, medicine.form)} / ${packageUnitLabel(l10n, medicine.packageUnit.isEmpty ? '盒' : medicine.packageUnit)}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
 
                 // 服用方式：备用药箱不服用，不展示
                 if (!isBackup) ...[
@@ -288,11 +300,12 @@ class MedicineDetailScreen extends StatelessWidget {
   Widget _buildQuickAdjust(
       BuildContext context, StorageService storage, Medicine medicine) {
     final theme = Theme.of(context);
-    final quickAdd = context.watch<QuickAddService>();
+    final l10n = AppLocalizations.of(context);
+    final packageUnit =
+        medicine.packageUnit.isEmpty ? '盒' : medicine.packageUnit;
     return Row(
       children: [
         Expanded(
-          flex: 2,
           child: OutlinedButton(
             onPressed: () {
               if (medicine.currentStock > 0) {
@@ -307,12 +320,11 @@ class MedicineDetailScreen extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
-            child: const Icon(Icons.remove),
+            child: Text('-1${formLabel(l10n, medicine.form)}'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          flex: 3,
           child: FilledButton(
             onPressed: () {
               final updated = medicine.copyWith(
@@ -327,49 +339,30 @@ class MedicineDetailScreen extends StatelessWidget {
               backgroundColor: theme.colorScheme.primaryContainer,
               foregroundColor: theme.colorScheme.onPrimaryContainer,
             ),
-            child: const Icon(Icons.add),
+            child: Text('+1${formLabel(l10n, medicine.form)}'),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 3,
-          child: FilledButton(
-            onPressed: () {
-              final updated = medicine.copyWith(
-                currentStock: medicine.currentStock + quickAdd.small,
-                updatedAt: DateTime.now(),
-                lastStockUpdate: DateTime.now(),
-              );
-              storage.update(updated);
-            },
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              backgroundColor: theme.colorScheme.primaryContainer,
-              foregroundColor: theme.colorScheme.onPrimaryContainer,
+        if (medicine.packageSize > 1) ...[
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton(
+              onPressed: () {
+                final updated = medicine.copyWith(
+                  currentStock: medicine.currentStock + medicine.packageSize,
+                  updatedAt: DateTime.now(),
+                  lastStockUpdate: DateTime.now(),
+                );
+                storage.update(updated);
+              },
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: theme.colorScheme.primaryContainer,
+                foregroundColor: theme.colorScheme.onPrimaryContainer,
+              ),
+              child: Text('+1${packageUnitLabel(l10n, packageUnit)}'),
             ),
-            child: Text('+${quickAdd.small}'),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 3,
-          child: FilledButton(
-            onPressed: () {
-              final updated = medicine.copyWith(
-                currentStock: medicine.currentStock + quickAdd.large,
-                updatedAt: DateTime.now(),
-                lastStockUpdate: DateTime.now(),
-              );
-              storage.update(updated);
-            },
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              backgroundColor: theme.colorScheme.primaryContainer,
-              foregroundColor: theme.colorScheme.onPrimaryContainer,
-            ),
-            child: Text('+${quickAdd.large}'),
-          ),
-        ),
+        ],
       ],
     );
   }
@@ -533,11 +526,11 @@ class _ScheduleChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final labels = _scheduleLabels(medicine);
+    final labels = _scheduleLabels(medicine, l10n);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             Icons.access_time,
@@ -580,17 +573,30 @@ class _ScheduleChips extends StatelessWidget {
   }
 }
 
-/// 生成服用安排胶囊的标签列表：每天→各时刻；每周/月→各日期 + 服用小时
-List<String> _scheduleLabels(Medicine m) {
+/// 生成服用安排胶囊的标签列表：
+/// 每天→各时刻（如 08:00）；每周/月→按周期描述（如「每2周六 08:00」「每月5日 16:00」）
+List<String> _scheduleLabels(Medicine m, AppLocalizations l10n) {
+  final hour = '${(m.doseHour ?? 8).toString().padLeft(2, '0')}:00';
   if (m.periodUnit == '天') {
     return [
       for (final s in m.doseSlots)
         '${s.toString().padLeft(2, '0')}:00',
     ];
   }
+  if (m.periodUnit == '周') {
+    return [
+      for (final d in m.nextRoundDates)
+        m.periodValue == 1
+            ? l10n.scheduleWeeklySingle(weekdayLabel(l10n, d.weekday), hour)
+            : l10n.scheduleWeekly(
+                '${m.periodValue}', weekdayLabel(l10n, d.weekday), hour),
+    ];
+  }
   return [
-    for (final d in m.nextRoundDates) '${d.month}/${d.day}',
-    '${(m.doseHour ?? 8).toString().padLeft(2, '0')}:00',
+    for (final d in m.nextRoundDates)
+      m.periodValue == 1
+          ? l10n.scheduleMonthlySingle('${d.day}', hour)
+          : l10n.scheduleMonthly('${m.periodValue}', '${d.day}', hour),
   ];
 }
 
